@@ -1,14 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { X, Camera, RefreshCw, Check, SwitchCamera } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { compressImageToBase64 } from '@/lib/image';
+import { X, Camera, RefreshCw, Check, FlipHorizontal2 } from 'lucide-react';
 
 interface CameraModalProps {
   open: boolean;
   onClose: () => void;
-  /** Called with base64 data-URL of the captured+compressed image */
   onCapture: (dataUrl: string) => void;
 }
 
@@ -19,239 +16,333 @@ export function CameraModal({ open, onClose, onCapture }: CameraModalProps) {
 
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [captured, setCaptured] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [compressing, setCompressing] = useState(false);
 
-  // Start camera
-  const startCamera = useCallback(async (facing: 'environment' | 'user') => {
-    // Stop existing stream first
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+  const stopStream = useCallback(() => {
+    const stream = streamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((t) => { try { t.stop(); } catch (_) {} });
       streamRef.current = null;
     }
-    setError(null);
+    const v = videoRef.current;
+    if (v) {
+      v.srcObject = null;
+    }
+  }, []);
+
+  const startStream = useCallback(async (facing: 'environment' | 'user') => {
+    stopStream();
+    setErrorMsg(null);
     setLoading(true);
+
+    // Check if getUserMedia supported
+    if (
+      typeof navigator === 'undefined' ||
+      !navigator.mediaDevices ||
+      typeof navigator.mediaDevices.getUserMedia !== 'function'
+    ) {
+      setErrorMsg('આ browser / device Camera API ને support કરતો નથી.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      const constraints: MediaStreamConstraints = {
         audio: false,
-      });
+        video: {
+          facingMode: { ideal: facing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+
+      const v = videoRef.current;
+      if (!v) { stopStream(); return; }
+
+      v.srcObject = stream;
+      v.setAttribute('autoplay', '');
+      v.setAttribute('muted', '');
+      v.setAttribute('playsinline', '');
+
+      // Use oncanplay event to play (more reliable on mobile)
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('timeout')), 8000);
+        v.oncanplay = () => {
+          clearTimeout(timeout);
+          v.play().then(resolve).catch(reject);
+        };
+        // If already ready
+        if (v.readyState >= 3) {
+          clearTimeout(timeout);
+          v.play().then(resolve).catch(reject);
+        }
+      });
+
     } catch (e: any) {
-      setError('કૅમેરો ખોલી શકાયો નહીં. કૅમેરા પરવાનગી આપો.');
       console.error('Camera error:', e);
+      let msg = 'કૅમેરો ખોલી શકાયો નહીં.';
+      if (e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError') {
+        msg = 'Camera permission denied. Browser settings માં Camera permission enable કરો.';
+      } else if (e?.name === 'NotFoundError') {
+        msg = 'Device પર Camera મળ્યો નહીં.';
+      } else if (e?.name === 'NotReadableError') {
+        msg = 'Camera બીજા app વડે ઉપયોગ થઈ રહ્યો છે. ફરી પ્રયાસ કરો.';
+      }
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [stopStream]);
 
-  // Stop camera
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, []);
-
+  // Open/close lifecycle
   useEffect(() => {
     if (open) {
       setCaptured(null);
-      setError(null);
-      startCamera(facingMode);
+      setErrorMsg(null);
+      startStream(facingMode);
     } else {
-      stopCamera();
+      stopStream();
       setCaptured(null);
-      setError(null);
+      setErrorMsg(null);
     }
-    return () => { stopCamera(); };
-  }, [open]); // eslint-disable-line
-
-  const switchCamera = useCallback(async () => {
-    const next = facingMode === 'environment' ? 'user' : 'environment';
-    setFacingMode(next);
-    setCaptured(null);
-    await startCamera(next);
-  }, [facingMode, startCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleCapture = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    const v = videoRef.current;
+    const c = canvasRef.current;
+    if (!v || !c) return;
 
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const w = v.videoWidth || v.clientWidth || 1280;
+    const h = v.videoHeight || v.clientHeight || 720;
+    c.width = w;
+    c.height = h;
+
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0, w, h);
+    const dataUrl = c.toDataURL('image/jpeg', 0.9);
     setCaptured(dataUrl);
-    // Pause live feed while showing preview
-    video.pause();
+    try { v.pause(); } catch (_) {}
   }, []);
 
   const handleRetake = useCallback(() => {
     setCaptured(null);
-    if (videoRef.current) videoRef.current.play();
+    try { videoRef.current?.play(); } catch (_) {}
   }, []);
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = useCallback(() => {
     if (!captured) return;
-    setCompressing(true);
-    try {
-      // Convert dataUrl to File for compression
-      const res = await fetch(captured);
-      const blob = await res.blob();
-      const file = new File([blob], 'camera.jpg', { type: 'image/jpeg' });
-      const compressed = await compressImageToBase64(file);
-      onCapture(compressed);
-      onClose();
-    } catch {
-      // If compression fails, use original
-      onCapture(captured);
-      onClose();
-    } finally {
-      setCompressing(false);
-    }
-  }, [captured, onCapture, onClose]);
+    onCapture(captured);
+    stopStream();
+    onClose();
+  }, [captured, onCapture, onClose, stopStream]);
+
+  const handleFlip = useCallback(async () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(next);
+    setCaptured(null);
+    await startStream(next);
+  }, [facingMode, startStream]);
 
   const handleClose = useCallback(() => {
-    stopCamera();
+    stopStream();
     setCaptured(null);
     onClose();
-  }, [stopCamera, onClose]);
+  }, [stopStream, onClose]);
+
+  if (!open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          key="camera-modal"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] bg-black flex flex-col"
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        background: '#000',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
+        <button
+          onClick={handleClose}
+          style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)', border: 'none',
+            color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 z-10">
+          <X size={22} />
+        </button>
+
+        <span style={{ color: '#fff', fontWeight: 900, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase' }}>
+          {captured ? 'ફોટો ચકાસો' : 'લાઈવ કૅમેરો'}
+        </span>
+
+        {!captured ? (
+          <button
+            onClick={handleFlip}
+            style={{
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)', border: 'none',
+              color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <FlipHorizontal2 size={20} />
+          </button>
+        ) : <div style={{ width: 44 }} />}
+      </div>
+
+      {/* Main area */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {errorMsg ? (
+          <div style={{ textAlign: 'center', padding: '0 32px' }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: 'rgba(239,68,68,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px',
+            }}>
+              <Camera size={36} color="#f87171" />
+            </div>
+            <p style={{ color: '#fff', fontWeight: 700, fontSize: 15, lineHeight: 1.5, marginBottom: 16 }}>{errorMsg}</p>
             <button
-              onClick={handleClose}
-              className="h-11 w-11 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-95 transition-transform"
+              onClick={() => startStream(facingMode)}
+              style={{
+                padding: '12px 28px', borderRadius: 12,
+                background: '#fff', color: '#000',
+                border: 'none', fontWeight: 900, fontSize: 14, cursor: 'pointer',
+              }}
             >
-              <X className="h-6 w-6" />
+              ફરી પ્રયાસ કરો
             </button>
-            <span className="text-white font-black text-sm uppercase tracking-widest">
-              {captured ? 'ફોટો ચકાસો' : 'કૅમેરો'}
-            </span>
-            {!captured && (
-              <button
-                onClick={switchCamera}
-                className="h-11 w-11 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-95 transition-transform"
-              >
-                <SwitchCamera className="h-5 w-5" />
-              </button>
-            )}
-            {captured && <div className="w-11" />}
           </div>
-
-          {/* Camera / Preview area */}
-          <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-black">
-            {error ? (
-              <div className="text-center px-8 space-y-4">
-                <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto">
-                  <Camera className="h-10 w-10 text-rose-400" />
-                </div>
-                <p className="text-white font-bold text-base">{error}</p>
-                <button
-                  onClick={() => startCamera(facingMode)}
-                  className="mt-2 px-6 py-3 bg-white text-black font-black rounded-xl active:scale-95 transition-transform"
-                >
-                  ફરી પ્રયાસ કરો
-                </button>
+        ) : captured ? (
+          <img
+            src={captured}
+            alt="captured"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
+        ) : (
+          <>
+            {loading && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(0,0,0,0.5)',
+              }}>
+                <div style={{
+                  width: 60, height: 60, borderRadius: '50%',
+                  border: '4px solid rgba(255,255,255,0.2)',
+                  borderTopColor: '#fff',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
-            ) : captured ? (
-              <img
-                src={captured}
-                alt="captured"
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <>
-                {loading && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-white animate-spin" />
-                  </div>
-                )}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={{ opacity: loading ? 0.3 : 1, transition: 'opacity 0.3s' }}
-                />
-                {/* Viewfinder corners */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-8 left-8 w-10 h-10 border-l-4 border-t-4 border-white/70 rounded-tl-lg" />
-                  <div className="absolute top-8 right-8 w-10 h-10 border-r-4 border-t-4 border-white/70 rounded-tr-lg" />
-                  <div className="absolute bottom-8 left-8 w-10 h-10 border-l-4 border-b-4 border-white/70 rounded-bl-lg" />
-                  <div className="absolute bottom-8 right-8 w-10 h-10 border-r-4 border-b-4 border-white/70 rounded-br-lg" />
-                </div>
-              </>
             )}
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-
-          {/* Bottom controls */}
-          <div className="flex items-center justify-center gap-8 py-8 bg-black">
-            {captured ? (
-              <>
-                {/* Retake */}
-                <button
-                  onClick={handleRetake}
-                  className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
-                >
-                  <div className="h-14 w-14 rounded-full bg-white/10 border-2 border-white/30 flex items-center justify-center">
-                    <RefreshCw className="h-6 w-6 text-white" />
-                  </div>
-                  <span className="text-white/70 text-xs font-bold">ફરી પાડો</span>
-                </button>
-
-                {/* Confirm */}
-                <button
-                  onClick={handleConfirm}
-                  disabled={compressing}
-                  className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
-                >
-                  <div className="h-20 w-20 rounded-full bg-emerald-500 border-4 border-emerald-300 flex items-center justify-center shadow-lg shadow-emerald-500/40">
-                    {compressing
-                      ? <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                      : <Check className="h-9 w-9 text-white" strokeWidth={3} />
-                    }
-                  </div>
-                  <span className="text-white text-xs font-black">ઉપયોગ કરો</span>
-                </button>
-              </>
-            ) : (
-              /* Capture button */
-              <button
-                onClick={handleCapture}
-                disabled={loading || !!error}
-                className="active:scale-95 transition-transform disabled:opacity-40"
-              >
-                <div className="h-20 w-20 rounded-full bg-white border-4 border-white/50 shadow-lg flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full bg-white border-4 border-black/10" />
-                </div>
-              </button>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: loading ? 0.3 : 1,
+                transition: 'opacity 0.3s',
+                display: 'block',
+              }}
+            />
+            {/* Corner guides */}
+            {!loading && (
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                {[
+                  { top: 32, left: 32, borderTop: '4px solid rgba(255,255,255,0.7)', borderLeft: '4px solid rgba(255,255,255,0.7)', borderRadius: '8px 0 0 0' },
+                  { top: 32, right: 32, borderTop: '4px solid rgba(255,255,255,0.7)', borderRight: '4px solid rgba(255,255,255,0.7)', borderRadius: '0 8px 0 0' },
+                  { bottom: 32, left: 32, borderBottom: '4px solid rgba(255,255,255,0.7)', borderLeft: '4px solid rgba(255,255,255,0.7)', borderRadius: '0 0 0 8px' },
+                  { bottom: 32, right: 32, borderBottom: '4px solid rgba(255,255,255,0.7)', borderRight: '4px solid rgba(255,255,255,0.7)', borderRadius: '0 0 8px 0' },
+                ].map((s, i) => (
+                  <div key={i} style={{ position: 'absolute', width: 36, height: 36, ...s }} />
+                ))}
+              </div>
             )}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </>
+        )}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+      </div>
+
+      {/* Bottom controls */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: 40, padding: '28px 0', background: '#000',
+      }}>
+        {captured ? (
+          <>
+            {/* Retake */}
+            <button
+              onClick={handleRetake}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <RefreshCw size={22} color="#fff" />
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 700 }}>ફરી પાડો</span>
+            </button>
+
+            {/* Confirm */}
+            <button
+              onClick={handleConfirm}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <div style={{
+                width: 76, height: 76, borderRadius: '50%',
+                background: '#22c55e', border: '4px solid #86efac',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 24px rgba(34,197,94,0.4)',
+              }}>
+                <Check size={34} color="#fff" strokeWidth={3} />
+              </div>
+              <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>ઉપયોગ કરો</span>
+            </button>
+          </>
+        ) : (
+          /* Shutter button */
+          <button
+            onClick={handleCapture}
+            disabled={loading || !!errorMsg}
+            style={{
+              width: 76, height: 76, borderRadius: '50%',
+              background: '#fff', border: '5px solid rgba(255,255,255,0.4)',
+              cursor: loading || errorMsg ? 'not-allowed' : 'pointer',
+              opacity: loading || errorMsg ? 0.4 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 0 3px rgba(255,255,255,0.2)',
+              padding: 0,
+            }}
+          >
+            <div style={{
+              width: 62, height: 62, borderRadius: '50%',
+              background: '#fff', border: '3px solid rgba(0,0,0,0.08)',
+            }} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
