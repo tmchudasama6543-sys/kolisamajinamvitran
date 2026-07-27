@@ -23,6 +23,7 @@ import { compressImageToBase64 } from '@/lib/image';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { CameraModal } from '@/components/CameraModal';
 
 const gujaratiRegex = /^[\u0A80-\u0AFF\s\.\(\)\-]+$/;
 
@@ -63,6 +64,7 @@ export default function AdminPanel() {
   const [compressing, setCompressing] = useState<{ marksheet: boolean; aadhar: boolean }>({ marksheet: false, aadhar: false });
   const [percentage, setPercentage] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState<'marksheet' | 'aadhar' | null>(null);
 
   // Preview states
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
@@ -123,11 +125,8 @@ export default function AdminPanel() {
 
   // ── Explicit Triggers for Camera/Gallery ──────────────────────────────────
   const triggerCamera = useCallback((field: 'marksheet' | 'aadhar') => {
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
-    }
-    document.getElementById(`${uid}-${field}-cam`)?.click();
-  }, [uid]);
+    setCameraTarget(field);
+  }, []);
 
   const triggerGallery = useCallback((field: 'marksheet' | 'aadhar') => {
     if (typeof window !== 'undefined' && (window as any).AppInventor) {
@@ -394,7 +393,6 @@ export default function AdminPanel() {
               </div>
             </div>
           )}
-          <input id={camId} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFile(e, f)} />
           <input id={galId} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e, f)} />
         </div>
       </div>
@@ -548,6 +546,14 @@ export default function AdminPanel() {
           )}
         </div>
         {PreviewModal}
+        <CameraModal
+          open={cameraTarget !== null}
+          onClose={() => setCameraTarget(null)}
+          onCapture={(dataUrl) => {
+            if (cameraTarget) setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
+            setCameraTarget(null);
+          }}
+        />
       </>
     );
   }
@@ -678,6 +684,14 @@ export default function AdminPanel() {
         </div>
       </div>
       {PreviewModal}
+      <CameraModal
+        open={cameraTarget !== null}
+        onClose={() => setCameraTarget(null)}
+        onCapture={(dataUrl) => {
+          if (cameraTarget) setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
+          setCameraTarget(null);
+        }}
+      />
     </>
   );
 }

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, RefreshCw, Camera, Lock, CheckCircle2, Save, Image, Trash2, Eye, X, ZoomIn, ZoomOut, Download } from 'lucide-react';
+import { CameraModal } from '@/components/CameraModal';
 import { useUser, useFirebase, saveStudentWithPhotosNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
@@ -56,6 +57,7 @@ export default function CenterPanel() {
   const [photos, setPhotos] = useState<{ marksheet: string | null; aadhar: string | null }>({ marksheet: null, aadhar: null });
   const [compressing, setCompressing] = useState<{ marksheet: boolean; aadhar: boolean }>({ marksheet: false, aadhar: false });
   const [percentage, setPercentage] = useState<string>('');
+  const [cameraTarget, setCameraTarget] = useState<'marksheet' | 'aadhar' | null>(null);
 
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -74,11 +76,8 @@ export default function CenterPanel() {
   }, []);
 
   const triggerCamera = useCallback((field: 'marksheet' | 'aadhar') => {
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
-    }
-    document.getElementById(`${uid}-${field}-cam`)?.click();
-  }, [uid]);
+    setCameraTarget(field);
+  }, []);
 
   const triggerGallery = useCallback((field: 'marksheet' | 'aadhar') => {
     if (typeof window !== 'undefined' && (window as any).AppInventor) {
@@ -285,7 +284,6 @@ export default function CenterPanel() {
                        <span className="text-[10px] font-bold text-slate-400">ના ઉમેરો તો પણ સેવ થશે</span>
                      </div>
                    )}
-                   <input id={`${uid}-marksheet-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleFile(ev, 'marksheet')} />
                    <input id={`${uid}-marksheet-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleFile(ev, 'marksheet')} />
                 </div>
               </div>
@@ -319,7 +317,6 @@ export default function CenterPanel() {
                        <span className="text-[10px] font-bold text-slate-400">ના ઉમેરો તો પણ સેવ થશે</span>
                      </div>
                    )}
-                   <input id={`${uid}-aadhar-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleFile(ev, 'aadhar')} />
                    <input id={`${uid}-aadhar-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleFile(ev, 'aadhar')} />
                 </div>
               </div>
@@ -416,6 +413,18 @@ export default function CenterPanel() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* In-App Camera Modal */}
+      <CameraModal
+        open={cameraTarget !== null}
+        onClose={() => setCameraTarget(null)}
+        onCapture={(dataUrl) => {
+          if (cameraTarget) {
+            setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
+          }
+          setCameraTarget(null);
+        }}
+      />
     </motion.div>
   );
 }

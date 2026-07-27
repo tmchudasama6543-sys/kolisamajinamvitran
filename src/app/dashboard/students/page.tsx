@@ -31,6 +31,7 @@ import { academicStandards } from '@/lib/standards';
 import { compressImageToBase64 } from '@/lib/image';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
+import { CameraModal } from '@/components/CameraModal';
 
 type StudentData = {
   id: string;
@@ -96,6 +97,7 @@ export default function StudentsListPage() {
   const [showBulkTrashConfirm, setShowBulkTrashConfirm] = useState(false);
 
   const uid = useId();
+  const [cameraTarget, setCameraTarget] = useState<{ field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64'; context: 'new' | 'edit' } | null>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -194,12 +196,8 @@ export default function StudentsListPage() {
   }, []);
 
   const triggerEditCamera = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
-    const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`camera_${fKey}`); } catch (_) {}
-    }
-    const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
-    document.getElementById(`${uid}-${prefix}-${fKey}-cam`)?.click();
+    const context = window.location.hash.includes('edit') ? 'edit' : 'new';
+    setCameraTarget({ field, context });
   };
 
   const triggerEditGallery = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
@@ -517,7 +515,6 @@ export default function StudentsListPage() {
                          <span className="text-[10px] font-bold text-slate-400">ના ઉમેરો તો પણ સેવ થશે</span>
                        </div>
                      )}
-                     <input id={`${uid}-new-${fKey}-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleImageReplace(ev, f)} />
                      <input id={`${uid}-new-${fKey}-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleImageReplace(ev, f)} />
                   </div>
                </div>
@@ -615,7 +612,6 @@ export default function StudentsListPage() {
                          <span className="text-[10px] font-bold text-slate-400">ના ઉમેરો તો પણ સેવ થશે</span>
                        </div>
                      )}
-                     <input id={`${uid}-edit-${fKey}-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleImageReplace(ev, f)} />
                      <input id={`${uid}-edit-${fKey}-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleImageReplace(ev, f)} />
                   </div>
                </div>
@@ -835,5 +831,21 @@ export default function StudentsListPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+
+    {/* In-App Camera Modal */}
+    <CameraModal
+      open={cameraTarget !== null}
+      onClose={() => setCameraTarget(null)}
+      onCapture={(dataUrl) => {
+        if (!cameraTarget) return;
+        const { field, context } = cameraTarget;
+        if (context === 'edit') {
+          setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
+        } else {
+          setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
+        }
+        setCameraTarget(null);
+      }}
+    />
   );
 }
