@@ -435,7 +435,7 @@ export default function AdminPanel() {
                 <FormField control={form.control} name="studentName" render={({ field }) => (
                   <FormItem className="space-y-2">
                     <FormLabel className="font-black text-xs uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ (ગુજરાતીમાં)</FormLabel>
-                    <FormControl><Input placeholder="નામ" {...field} className="h-14 font-black text-lg text-slate-900 rounded-2xl border-2 px-5 bg-slate-50/30" /></FormControl>
+                    <FormControl><Input placeholder="નામ લખો" {...field} className="h-14 font-black text-lg text-slate-900 rounded-2xl border-2 px-5 bg-slate-50/30" /></FormControl>
                     <FormMessage className="font-bold text-rose-500" />
                   </FormItem>
                 )} />

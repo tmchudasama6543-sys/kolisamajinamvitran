@@ -106,7 +106,7 @@ export default function CentersPage() {
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-black text-xs uppercase tracking-widest text-muted-foreground">સેન્ટરનું નામ</FormLabel>
-                    <FormControl><Input placeholder="નામ" {...field} className="h-12 rounded-xl" /></FormControl>
+                    <FormControl><Input placeholder="નામ લખો" {...field} className="h-12 rounded-xl" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
