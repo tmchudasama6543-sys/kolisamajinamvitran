@@ -1,0 +1,67 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // પાયાના ફંક્શન
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // એડમિન ચેક
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid)) ||
+        request.auth.token.email == 'jayhind6543@gmail.com'
+      );
+    }
+
+    // ઓપરેટર ચેક (મંજૂરી હોય તો જ)
+    function isApprovedOperator() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accessApproved == true ||
+        request.auth.token.email == 'yuvapalitana123@gmail.com'
+      );
+    }
+    
+    // યુઝર પ્રોફાઈલ માટેના નિયમો
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin(); // માત્ર એડમિન જ એક્સેસ મંજૂર કરી શકે
+      allow delete: if isAdmin();
+    }
+
+    // એડમિન રોલ માટેના નિયમો
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn() && (isAdmin() || request.auth.uid == userId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() || request.auth.token.email == 'jayhind6543@gmail.com';
+      allow update, delete: if isAdmin();
+    }
+
+    // વિદ્યાર્થીઓના ડેટા માટેના નિયમો
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || isApprovedOperator();
+      allow update, delete: if isAdmin() || (isApprovedOperator() && resource.data.enteredByUserId == request.auth.uid);
+    }
+
+    // ફોટા સ્ટોર કરવા માટેના નિયમો
+    match /student_photos/{studentId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isApprovedOperator();
+    }
+
+    // ટ્રેશ ફોલ્ડર (Recycle Bin) માટેના નિયમો
+    match /trash_students/{studentId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // ટ્રેશ કરેલા ફોટા માટેના નિયમો
+    match /trash_student_photos/{studentId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+  }
+}

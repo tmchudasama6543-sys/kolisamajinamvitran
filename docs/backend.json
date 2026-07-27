@@ -1,0 +1,91 @@
+
+{
+  "entities": {
+    "Student": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Student",
+      "type": "object",
+      "description": "Represents a student's profile and academic details.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "totalMarks": { "type": "number" },
+        "obtainedMarks": { "type": "number" },
+        "standard": { "type": "string" },
+        "mobileNumber": { "type": "string" },
+        "percentage": { "type": "number" },
+        "villageName": { "type": "string" },
+        "marksheetPhotoBase64": { "type": "string", "description": "HD WebP Base64 Data URI" },
+        "aadhaarPhotoBase64": { "type": "string", "description": "HD WebP Base64 Data URI" },
+        "enteredByUserId": { "type": "string" },
+        "submissionDateTime": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "name",
+        "totalMarks",
+        "obtainedMarks",
+        "standard",
+        "mobileNumber",
+        "villageName",
+        "percentage",
+        "enteredByUserId",
+        "submissionDateTime"
+      ]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "data_entry"] },
+        "accessApproved": { "type": "boolean", "default": false }
+      },
+      "required": ["role", "email"]
+    },
+    "AdminRole": {
+      "title": "Admin Role",
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "structure": [
+       {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": { "$ref": "#/backend/entities/UserProfile" },
+          "description": "Stores user profile information with access approval status."
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": { "$ref": "#/backend/entities/AdminRole" },
+          "description": "Dedicated collection for administrative roles."
+        }
+      },
+      {
+        "path": "/students/{studentId}",
+        "definition": {
+          "entityName": "Student",
+          "schema": { "$ref": "#/backend/entities/Student" },
+          "description": "Central collection for all student records."
+        }
+      },
+      {
+        "path": "/trash_students/{studentId}",
+        "definition": {
+          "entityName": "Student",
+          "schema": { "$ref": "#/backend/entities/Student" },
+          "description": "Recycle bin for student records."
+        }
+      }
+    ]
+  }
+}

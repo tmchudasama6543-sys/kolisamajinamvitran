@@ -1,0 +1,170 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Google Fonts: Noto Sans Gujarati for proper Gujarati text ── */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 224 7.1% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 7.1% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 7.1% 4.1%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 1.5rem;
+    
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 224 7.1% 4.1%;
+    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-primary-foreground: 210 20% 98%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 221.2 83.2% 53.3%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border box-border;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+  html, body {
+    @apply h-full w-full overflow-x-hidden scroll-smooth;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+  body {
+    /* Inter for Latin, Noto Sans Gujarati for Gujarati script */
+    font-family: 'Noto Sans Gujarati', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    @apply bg-background text-foreground antialiased text-base;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+    /* Allow text selection in inputs but not elsewhere */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    transform: translate3d(0,0,0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.22);
+  background-clip: padding-box;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Smooth transitions */
+.transition-all {
+  transition-duration: 220ms !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Animated gradient */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 4s ease infinite;
+}
+
+/* Pulse glow for important elements */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  50% { box-shadow: 0 0 0 8px rgba(16,185,129,0.12); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* Allow text selection in form inputs */
+input, select, textarea {
+  @apply text-lg !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  font-family: 'Noto Sans Gujarati', 'Inter', sans-serif !important;
+}
+
+/* 
+  IMPORTANT: DO NOT add pointer-events: none to img globally.
+  It was blocking all image click events (preview modal couldn't open).
+  Only apply drag prevention specifically.
+*/
+img {
+  @apply select-none;
+  -webkit-user-drag: none;
+  /* pointer-events remain 'auto' by default so clicks work */
+}
+
+/* Image inside preview containers — allow pointer events for click-to-zoom */
+.photo-preview-img {
+  pointer-events: auto !important;
+  cursor: zoom-in;
+}
+
+/* Button tap feedback */
+button, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Card hover lift effect */
+.card-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+/* Premium shimmer loading effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Gujarati text specific improvements */
+.text-gujarati {
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  line-height: 1.6;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "તળપદા કોળી સમાજ ઈનામ વિતરણ",
+  "description": "ડાયમંડ ગ્રુપ પાલિતાણા દ્વારા આયોજિત — AI સંચાલિત વિદ્યાર્થી ઈનામ વિતરણ પ્રણાલી.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
