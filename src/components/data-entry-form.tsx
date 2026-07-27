@@ -328,7 +328,7 @@ export default function CenterPanel() {
               <FormField control={form.control} name="studentName" render={({ field }) => (
                 <FormItem className="space-y-3">
                   <FormLabel className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ (ગુજરાતીમાં)</FormLabel>
-                  <FormControl><Input placeholder="ઉ.દ. રામભાઈ પટેલ" {...field} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30 shadow-inner" /></FormControl>
+                  <FormControl><Input placeholder="નામ લખો" {...field} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30 shadow-inner" /></FormControl>
                   <FormMessage className="font-bold text-rose-500" />
                 </FormItem>
               )} />
