@@ -32,6 +32,7 @@ export default function CentersPage() {
   const { user: adminUser, loading: adminLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
   useEffect(() => {
     if (!adminLoading && adminUser?.role !== 'admin') {
       router.replace('/dashboard');
@@ -39,7 +40,7 @@ export default function CentersPage() {
   }, [adminUser, adminLoading, router]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
+
 
   const centersQuery = useMemoFirebase(() => collection(firestore, 'dataEntryCenters'), [firestore]);
   const { data: centers, isLoading } = useCollection<DataEntryCenter>(centersQuery);
