@@ -179,6 +179,18 @@ export default function StudentsListPage() {
     return `data:image/jpeg;base64,${cleanData}`;
   };
 
+  const dataUrlToFile = (dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const callback = (field: 'marksheet' | 'aadhar', base64Data: string) => {
@@ -939,9 +951,7 @@ export default function StudentsListPage() {
           const { field, context } = cameraTarget;
           let finalData = dataUrl;
           try {
-            const res = await fetch(dataUrl);
-            const blob = await res.blob();
-            const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
+            const file = dataUrlToFile(dataUrl, "camera-photo.jpg");
             const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
             const compressedFile = await imageCompression(file, options);
             
