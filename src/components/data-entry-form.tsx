@@ -21,7 +21,6 @@ import imageCompression from 'browser-image-compression';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'motion/react';
-import { compressDataUrl } from '@/lib/image';
 
 const gujaratiRegex = /^[\u0A80-\u0AFF\s\.\(\)\-]+$/;
 
@@ -455,9 +454,20 @@ export default function CenterPanel() {
           if (cameraTarget) {
             setCompressing(p => ({ ...p, [cameraTarget]: true }));
             try {
-              const compressed = await compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 });
-              setPhotos(p => ({ ...p, [cameraTarget]: compressed }));
-              setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
+              const res = await fetch(dataUrl);
+              const blob = await res.blob();
+              const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
+              
+              const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
+              const compressedFile = await imageCompression(file, options);
+              
+              const reader = new FileReader();
+              reader.readAsDataURL(compressedFile);
+              reader.onloadend = () => {
+                const base64data = reader.result as string;
+                setPhotos(p => ({ ...p, [cameraTarget]: base64data }));
+                setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
+              };
             } catch (error) {
               console.error("Camera Compression error", error);
               setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));

@@ -939,7 +939,17 @@ export default function StudentsListPage() {
           const { field, context } = cameraTarget;
           let finalData = dataUrl;
           try {
-            finalData = await compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 });
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
+            const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
+            const compressedFile = await imageCompression(file, options);
+            
+            const reader = new FileReader();
+            finalData = await new Promise((resolve) => {
+               reader.onloadend = () => resolve(reader.result as string);
+               reader.readAsDataURL(compressedFile);
+            });
           } catch { /* raw use karo */ }
           if (context === 'edit') {
             setEditingStudent(prev => prev ? { ...prev, [field]: finalData } : null);
