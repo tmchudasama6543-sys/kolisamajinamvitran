@@ -178,11 +178,15 @@ export default function StudentsListPage() {
         const processedData = ensureBase64Prefix(base64Data);
         setPhotoLoading(prev => ({ ...prev, [fKey]: false }));
         
-        if (window.location.hash.includes('edit')) {
-          setEditingStudent(prev => prev ? { ...prev, [fKey]: processedData } : null);
-        } else if (window.location.hash.includes('new')) {
-          setNewStudent(prev => ({ ...prev, [fKey]: processedData }));
-        }
+        // Check editingStudent state directly (not just hash) for reliability
+        setEditingStudent(prev => {
+          if (prev) {
+            return { ...prev, [fKey]: processedData };
+          }
+          // No editing student open — set to newStudent
+          setNewStudent(p => ({ ...p, [fKey]: processedData }));
+          return prev;
+        });
       };
       (window as any).handleNativeEditImage = callback;
       (window as any).handleNativeImage = callback;
