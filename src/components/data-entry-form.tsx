@@ -206,12 +206,13 @@ export default function CenterPanel() {
   });
 
   const { watch, handleSubmit, reset } = form;
-  const watched = watch();
+  const watchedTotal = watch('totalMarks');
+  const watchedObtained = watch('obtainedMarks');
 
   useEffect(() => {
-    const t = Number(watched.totalMarks), o = Number(watched.obtainedMarks);
-    setPercentage(t > 0 && watched.obtainedMarks !== '' ? ((o / t) * 100).toFixed(2) : '');
-  }, [watched.totalMarks, watched.obtainedMarks]);
+    const t = Number(watchedTotal), o = Number(watchedObtained);
+    setPercentage(t > 0 && watchedObtained !== '' ? ((o / t) * 100).toFixed(2) : '');
+  }, [watchedTotal, watchedObtained]);
 
   const isApproved = useMemo(() => user?.accessApproved === true || user?.role === 'admin', [user]);
 

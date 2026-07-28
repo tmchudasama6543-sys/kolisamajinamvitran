@@ -100,7 +100,10 @@ export function useCollection<T = any>(
 
     setError(null);
 
-    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
+    // Throttling logic to prevent UI freeze under heavy load (1000+ entries)
+    let timerId: any = null;
+    let pendingData: ResultItemType[] | null = null;
+
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -111,9 +114,21 @@ export function useCollection<T = any>(
         if (currentKey) {
           globalCollectionCache.set(currentKey, results);
         }
-        setData(results);
-        setError(null);
-        setIsLoading(false);
+        
+        pendingData = results;
+        if (!timerId) {
+          // Leading edge - update immediately
+          setData(results);
+          setError(null);
+          setIsLoading(false);
+          
+          timerId = setTimeout(() => {
+            if (pendingData) {
+              setData(pendingData);
+            }
+            timerId = null;
+          }, 800); // Limit updates to ~1 per 800ms
+        }
       },
       (error: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
