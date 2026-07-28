@@ -811,7 +811,7 @@ export default function StudentsListPage() {
               if (!studentToDelete) return;
               try {
                 const { marksheetPhotoBase64, aadhaarPhotoBase64, ...cleanData } = studentToDelete;
-                await moveDocumentToTrash(firestore, 'students', 'trash_students', studentToDelete.id, { ...cleanData, deletedAt: new Date().toISOString(), deletedBy: user?.uid || 'unknown' });
+                await moveDocumentToTrash(firestore, 'students', studentToDelete.id, user?.uid || 'unknown');
                 deleteDocumentNonBlocking(doc(firestore, 'student_photos', studentToDelete.id)).catch(() => {});
                 toast({ title: 'સફળ!', description: 'વિદ્યાર્થીને ટ્રેશમાં ખસેડવામાં આવ્યો છે.' });
               } catch (error: any) { toast({ variant: 'destructive', title: 'ભૂલ', description: 'ખસેડવામાં ભૂલ આવી: ' + error.message }); }
@@ -830,22 +830,22 @@ export default function StudentsListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
 
-    {/* In-App Camera Modal */}
-    <CameraModal
-      open={cameraTarget !== null}
-      onClose={() => setCameraTarget(null)}
-      onCapture={(dataUrl) => {
-        if (!cameraTarget) return;
-        const { field, context } = cameraTarget;
-        if (context === 'edit') {
-          setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
-        } else {
-          setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
-        }
-        setCameraTarget(null);
-      }}
-    />
+      {/* In-App Camera Modal */}
+      <CameraModal
+        open={cameraTarget !== null}
+        onClose={() => setCameraTarget(null)}
+        onCapture={(dataUrl) => {
+          if (!cameraTarget) return;
+          const { field, context } = cameraTarget;
+          if (context === 'edit') {
+            setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
+          } else {
+            setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
+          }
+          setCameraTarget(null);
+        }}
+      />
+    </div>
   );
 }

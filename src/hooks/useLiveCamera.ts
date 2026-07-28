@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getDownloadURL, ref, uploadString } from 'firebase/storage';
-import { storage } from '@/firebase'; // existing firebase config
+import { initializeFirebase } from '@/firebase'; // existing firebase config
 
 /**
  * Hook to capture a photo from the device camera, preview it, and upload to Firebase Storage.
@@ -20,7 +20,13 @@ export function useLiveCamera() {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
       const video = document.createElement('video');
       video.srcObject = stream;
       await video.play();
@@ -45,6 +51,7 @@ export function useLiveCamera() {
 
   const upload = useCallback(async (dataUrl: string, path: string): Promise<string> => {
     setUploading(true);
+    const { storage } = initializeFirebase();
     const storageRef = ref(storage, path);
     await uploadString(storageRef, dataUrl, 'data_url');
     const url = await getDownloadURL(storageRef);
