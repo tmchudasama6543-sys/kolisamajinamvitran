@@ -73,6 +73,56 @@ export function compressImageToBase64(
   });
 }
 
+/**
+ * Compresses a dataUrl (from camera capture) to same optimized format as gallery images.
+ * Works on base64 dataUrl strings directly without needing a File object.
+ */
+export function compressDataUrl(
+  dataUrl: string,
+  options: CompressOptions = {}
+): Promise<string> {
+  const {
+    quality = 0.35,
+    maxWidth = 650,
+    format = 'image/jpeg'
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas context error.'));
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+
+      try {
+        const compressed = canvas.toDataURL(format, quality);
+        canvas.width = 0;
+        canvas.height = 0;
+        resolve(compressed);
+      } catch (e) {
+        reject(new Error('Image compression failed.'));
+      }
+    };
+    img.onerror = () => reject(new Error('Could not load image for compression.'));
+    img.src = dataUrl;
+  });
+}
+
 /** 
  * Converts a file or blob to a raw data URI string.
  * Used for immediate previews before compression if needed.

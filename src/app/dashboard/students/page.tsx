@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { palitanaVillages } from '@/lib/palitana-villages';
 import { academicStandards } from '@/lib/standards';
-import { compressImageToBase64 } from '@/lib/image';
+import { compressImageToBase64, compressDataUrl } from '@/lib/image';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
 import { CameraModal } from '@/components/CameraModal';
@@ -846,13 +846,17 @@ export default function StudentsListPage() {
       <CameraModal
         open={cameraTarget !== null}
         onClose={() => setCameraTarget(null)}
-        onCapture={(dataUrl) => {
+        onCapture={async (dataUrl) => {
           if (!cameraTarget) return;
           const { field, context } = cameraTarget;
+          let finalData = dataUrl;
+          try {
+            finalData = await compressDataUrl(dataUrl);
+          } catch { /* raw use karo */ }
           if (context === 'edit') {
-            setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
+            setEditingStudent(prev => prev ? { ...prev, [field]: finalData } : null);
           } else {
-            setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
+            setNewStudent(prev => ({ ...prev, [field]: finalData }));
           }
           setCameraTarget(null);
         }}

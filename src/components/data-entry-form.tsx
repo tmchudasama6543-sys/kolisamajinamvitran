@@ -17,7 +17,7 @@ import { serverTimestamp } from 'firebase/firestore';
 import { palitanaVillages } from '@/lib/palitana-villages';
 import { academicStandards } from '@/lib/standards';
 import { cn } from '@/lib/utils';
-import { compressImageToBase64 } from '@/lib/image';
+import { compressImageToBase64, compressDataUrl } from '@/lib/image';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -75,15 +75,30 @@ export default function CenterPanel() {
     return () => { delete (window as any).handleNativeImage; };
   }, []);
 
-  const triggerCamera = useCallback((field: 'marksheet' | 'aadhar') => {
+  const triggerCamera = useCallback(async (field: 'marksheet' | 'aadhar') => {
     // Kodular/Android WebViewer ma native camera use karo
     if (typeof window !== 'undefined' && (window as any).AppInventor) {
       try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
-      return; // Native camera handle karse - handleNativeImage callback aavse
+      return;
     }
-    // Regular browser ma in-app CameraModal kholo
+    // Browser ma camera available chhe ke nai te check karo
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast({ variant: 'destructive', title: 'Camera ઉપલબ્ધ નથી', description: 'આ device પર camera support નથી.' });
+      return;
+    }
+    try {
+      // Permission ane availability check (permission dialog open nahi karo)
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasCamera = devices.some(d => d.kind === 'videoinput');
+      if (!hasCamera) {
+        toast({ variant: 'destructive', title: 'Camera મળ્યો નહીં', description: 'Device સાથે camera જોડાયેલ નથી.' });
+        return;
+      }
+    } catch (_) {
+      // enumerateDevices fail thay to modal j kholva do
+    }
     setCameraTarget(field);
-  }, []);
+  }, [toast]);
 
   const triggerGallery = useCallback((field: 'marksheet' | 'aadhar') => {
     if (typeof window !== 'undefined' && (window as any).AppInventor) {
@@ -424,9 +439,18 @@ export default function CenterPanel() {
       <CameraModal
         open={cameraTarget !== null}
         onClose={() => setCameraTarget(null)}
-        onCapture={(dataUrl) => {
+        onCapture={async (dataUrl) => {
           if (cameraTarget) {
-            setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
+            setCompressing(p => ({ ...p, [cameraTarget]: true }));
+            try {
+              const compressed = await compressDataUrl(dataUrl);
+              setPhotos(p => ({ ...p, [cameraTarget]: compressed }));
+            } catch {
+              // Compression fail thay to raw image use karo
+              setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
+            } finally {
+              setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
+            }
           }
           setCameraTarget(null);
         }}
