@@ -108,6 +108,14 @@ export default function StudentsListPage() {
   const [photoLoading, setPhotoLoading] = useState<{ marksheetPhotoBase64: boolean; aadhaarPhotoBase64: boolean }>({ marksheetPhotoBase64: false, aadhaarPhotoBase64: false });
   const [isFetchingPhotos, setIsFetchingPhotos] = useState<string | null>(null);
 
+  const [viewPhotosModal, setViewPhotosModal] = useState<{
+    isOpen: boolean;
+    studentName: string;
+    marksheet: string | null;
+    aadhar: string | null;
+  }>({ isOpen: false, studentName: '', marksheet: null, aadhar: null });
+  const [isFetchingPhotosForView, setIsFetchingPhotosForView] = useState<string | null>(null);
+
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -353,6 +361,32 @@ export default function StudentsListPage() {
     } catch (e) {
       toast({ variant: 'destructive', title: 'ભૂલ', description: 'દસ્તાવેજો લોડ કરવામાં સમસ્યા.' });
     } finally { setIsFetchingPhotos(null); }
+  };
+
+  const handleViewPhotosClick = async (student: StudentData) => {
+    setIsFetchingPhotosForView(student.id);
+    try {
+      const photosSnap = await getDoc(doc(firestore, 'student_photos', student.id));
+      if (photosSnap.exists()) {
+        const photoData = photosSnap.data();
+        if (!photoData.marksheetPhotoBase64 && !photoData.aadhaarPhotoBase64) {
+           toast({ title: 'ફોટો નથી', description: 'આ વિદ્યાર્થીનો કોઈ ફોટો અપલોડ થયેલ નથી.' });
+        } else {
+           setViewPhotosModal({
+             isOpen: true,
+             studentName: student.name,
+             marksheet: photoData.marksheetPhotoBase64 || null,
+             aadhar: photoData.aadhaarPhotoBase64 || null
+           });
+        }
+      } else {
+        toast({ title: 'ફોટો નથી', description: 'આ વિદ્યાર્થીનો કોઈ ફોટો અપલોડ થયેલ નથી.' });
+      }
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'ભૂલ', description: 'ફોટો લોડ કરવામાં સમસ્યા આવી.' });
+    } finally {
+      setIsFetchingPhotosForView(null);
+    }
   };
 
   const handleSaveNew = async () => {
@@ -756,6 +790,9 @@ export default function StudentsListPage() {
                     <TableCell className="text-center"><Badge className="px-4 py-1 rounded-full bg-indigo-50 border-none text-lg font-black text-indigo-600">{s.percentage?.toFixed(2)}%</Badge></TableCell>
                     <TableCell className="p-6 text-right">
                       <div className="flex justify-end gap-2">
+                         <Button onClick={() => handleViewPhotosClick(s)} size="icon" variant="outline" className="h-12 w-12 rounded-xl border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 transition-all" title="ફોટા જુઓ">
+                           {isFetchingPhotosForView === s.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Eye className="h-5 w-5" />}
+                         </Button>
                          <Button onClick={() => handleEditClick(s)} size="icon" variant="outline" className="h-12 w-12 rounded-xl border-2 border-primary text-primary hover:bg-primary/5 transition-all"><Edit3 className="h-5 w-5" /></Button>
                          <Button onClick={() => setStudentToDelete(s)} variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-rose-500 hover:bg-rose-50 transition-all" title="ટ્રેશ કરો"><Trash2 className="h-5 w-5" /></Button>
                       </div>
@@ -839,6 +876,47 @@ export default function StudentsListPage() {
             <AlertDialogCancel className="h-14 rounded-xl border-2 font-black text-lg">ના</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkTrash} className="h-14 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-lg">હા, બધાને ટ્રેશ કરો</AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={viewPhotosModal.isOpen} onOpenChange={(open) => !open && setViewPhotosModal(prev => ({...prev, isOpen: false}))}>
+        <AlertDialogContent className="rounded-[2rem] p-6 sm:p-8 max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl sm:text-2xl font-black text-primary flex items-center justify-between">
+              <span>{viewPhotosModal.studentName} ના ફોટા</span>
+              <Button variant="ghost" size="icon" onClick={() => setViewPhotosModal(prev => ({...prev, isOpen: false}))} className="h-10 w-10 rounded-full hover:bg-slate-100 -mr-2"><X className="h-6 w-6" /></Button>
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-2">
+            {viewPhotosModal.marksheet ? (
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">📄 માર્કશીટ</span>
+                <div className="relative group aspect-[4/3] rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 flex items-center justify-center cursor-zoom-in" onClick={() => openPreview(viewPhotosModal.marksheet!)}>
+                   <img src={viewPhotosModal.marksheet} className="w-full h-full object-contain" alt="Marksheet" />
+                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">📄 માર્કશીટ</span>
+                <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-sm">ફોટો નથી</div>
+              </div>
+            )}
+            {viewPhotosModal.aadhar ? (
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">🪪 આધાર કાર્ડ</span>
+                <div className="relative group aspect-[4/3] rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 flex items-center justify-center cursor-zoom-in" onClick={() => openPreview(viewPhotosModal.aadhar!)}>
+                   <img src={viewPhotosModal.aadhar} className="w-full h-full object-contain" alt="Aadhar" />
+                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">🪪 આધાર કાર્ડ</span>
+                <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-sm">ફોટો નથી</div>
+              </div>
+            )}
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 
