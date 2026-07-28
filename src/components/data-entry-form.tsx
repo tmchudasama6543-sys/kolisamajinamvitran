@@ -43,7 +43,8 @@ type FormValues = z.infer<typeof formSchema>;
 
 function normalizeBase64(data: string): string {
   if (!data) return data;
-  return data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
+  const cleanData = data.replace(/[\r\n\s]+/g, '');
+  return cleanData.startsWith('data:') ? cleanData : `data:image/jpeg;base64,${cleanData}`;
 }
 
 export default function CenterPanel() {

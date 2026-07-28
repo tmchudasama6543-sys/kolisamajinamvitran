@@ -174,8 +174,9 @@ export default function StudentsListPage() {
 
   const ensureBase64Prefix = (data: string) => {
     if (!data) return data;
-    if (data.startsWith('data:')) return data;
-    return `data:image/jpeg;base64,${data}`;
+    const cleanData = data.replace(/[\r\n\s]+/g, '');
+    if (cleanData.startsWith('data:')) return cleanData;
+    return `data:image/jpeg;base64,${cleanData}`;
   };
 
   useEffect(() => {
@@ -374,7 +375,8 @@ export default function StudentsListPage() {
         } else {
            const ensureBase64Prefix = (data: string) => {
              if (!data) return data;
-             return data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
+             const cleanData = data.replace(/[\r\n\s]+/g, '');
+             return cleanData.startsWith('data:') ? cleanData : `data:image/jpeg;base64,${cleanData}`;
            };
            setViewPhotosModal({
              isOpen: true,
