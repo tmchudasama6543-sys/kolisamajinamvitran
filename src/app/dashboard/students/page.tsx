@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useFirestore, useCollection, useMemoFirebase, updateStudentWithPhotosNonBlocking, moveDocumentToTrash, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc, limit, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, limit, writeBatch, getDoc, deleteField } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -92,6 +92,7 @@ export default function StudentsListPage() {
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isFixingDb, setIsFixingDb] = useState(false);
 
   const [studentToDelete, setStudentToDelete] = useState<StudentData | null>(null);
   const [showBulkTrashConfirm, setShowBulkTrashConfirm] = useState(false);
@@ -341,6 +342,40 @@ export default function StudentsListPage() {
     } finally { setIsBulkProcessing(false); }
   };
 
+  const handleFixDatabase = async () => {
+    if (!students || students.length === 0) return;
+    setIsFixingDb(true);
+    toast({ title: 'શરૂઆત...', description: 'ડેટાબેઝ ક્લીનઅપ શરૂ થયું છે. કૃપા કરીને રાહ જુઓ.' });
+    try {
+      let fixedCount = 0;
+      for (const s of students) {
+        if (s.marksheetPhotoBase64 || s.aadhaarPhotoBase64) {
+          const studentRef = doc(firestore, 'students', s.id);
+          const photosRef = doc(firestore, 'student_photos', s.id);
+          
+          const batch = writeBatch(firestore);
+          batch.set(photosRef, {
+            marksheetPhotoBase64: s.marksheetPhotoBase64 || "",
+            aadhaarPhotoBase64: s.aadhaarPhotoBase64 || ""
+          }, { merge: true });
+          
+          batch.update(studentRef, {
+            marksheetPhotoBase64: deleteField(),
+            aadhaarPhotoBase64: deleteField()
+          });
+          
+          await batch.commit();
+          fixedCount++;
+        }
+      }
+      toast({ title: 'સફળ!', description: `${fixedCount} રેકોર્ડ્સ સફળતાપૂર્વક સાફ થયા. હવે એપ ફાસ્ટ ચાલશે!` });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'ભૂલ', description: 'ક્લીનઅપ નિષ્ફળ: ' + e.message });
+    } finally {
+      setIsFixingDb(false);
+    }
+  };
+
   const handleEditClick = async (student: StudentData) => {
     window.location.hash = 'edit';
     if (student.marksheetPhotoBase64 || student.aadhaarPhotoBase64) {
@@ -413,7 +448,7 @@ export default function StudentsListPage() {
         ...textData,
         percentage,
         enteredByUserId: user?.uid || 'admin',
-        submissionDateTime: new Date()
+        submissionDateTime: new Date().toISOString()
       };
       
       const photoData = {
@@ -518,6 +553,36 @@ export default function StudentsListPage() {
   if (userLoading) return <div className="p-10"><Skeleton className="h-[70vh] w-full rounded-3xl" /></div>;
   if (!user || user.role !== 'admin') return null;
 
+  const cameraModalComponent = (
+    <CameraModal
+      open={cameraTarget !== null}
+      onClose={() => setCameraTarget(null)}
+      onCapture={(dataUrl) => {
+        if (!cameraTarget) return;
+        const { field, context } = cameraTarget;
+        
+        compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 })
+          .then(compressed => {
+            if (context === 'edit') {
+              setEditingStudent(prev => prev ? { ...prev, [field]: compressed } : null);
+            } else {
+              setNewStudent(prev => ({ ...prev, [field]: compressed }));
+            }
+          })
+          .catch(() => {
+             if (context === 'edit') {
+               setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
+             } else {
+               setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
+             }
+          })
+          .finally(() => {
+             setCameraTarget(null);
+          });
+      }}
+    />
+  );
+
   if (isAddingNew) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-12 max-w-4xl mx-auto space-y-12 pb-32">
@@ -611,6 +676,7 @@ export default function StudentsListPage() {
             </div>
           </div>
         </div>
+        {cameraModalComponent}
       </motion.div>
     );
   }
@@ -731,6 +797,7 @@ export default function StudentsListPage() {
             </motion.div>
           </AnimatePresence>
         )}
+        {cameraModalComponent}
       </motion.div>
     );
   }
@@ -744,6 +811,9 @@ export default function StudentsListPage() {
           </h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
+             <Button onClick={handleFixDatabase} disabled={isFixingDb} className="h-14 px-8 text-lg font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
+               {isFixingDb ? <Loader2 className="h-6 w-6 animate-spin" /> : "🛠️"} ક્લીનઅપ
+             </Button>
              <Button onClick={handleExportToExcel} className="h-14 px-8 text-lg font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><FileDown className="h-6 w-6" /> એક્સેલ ડાઉનલોડ ({filteredStudents.length})</Button>
              <Button onClick={openNew} className="h-14 px-8 text-lg font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><Users className="h-6 w-6" /> નવી એન્ટ્રી ઉમેરો</Button>
           </div>
@@ -930,34 +1000,7 @@ export default function StudentsListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <CameraModal
-        open={cameraTarget !== null}
-        onClose={() => setCameraTarget(null)}
-        onCapture={(dataUrl) => {
-          if (!cameraTarget) return;
-          const { field, context } = cameraTarget;
-          
-          compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 })
-            .then(compressed => {
-              if (context === 'edit') {
-                setEditingStudent(prev => prev ? { ...prev, [field]: compressed } : null);
-              } else {
-                setNewStudent(prev => ({ ...prev, [field]: compressed }));
-              }
-            })
-            .catch(() => {
-               // Fallback to raw data if canvas compression somehow fails
-               if (context === 'edit') {
-                 setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
-               } else {
-                 setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
-               }
-            })
-            .finally(() => {
-               setCameraTarget(null);
-            });
-        }}
-      />
+      {cameraModalComponent}
     </div>
   );
 }

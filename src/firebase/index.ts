@@ -6,8 +6,7 @@ import { getAuth } from 'firebase/auth';
 import { 
   getFirestore, 
   initializeFirestore, 
-  persistentLocalCache, 
-  persistentMultipleTabManager 
+  memoryLocalCache
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -37,9 +36,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
   if (!firestoreInstance) {
     try {
       firestoreInstance = initializeFirestore(firebaseApp, {
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager()
-        })
+        localCache: memoryLocalCache()
       });
     } catch (e) {
       firestoreInstance = getFirestore(firebaseApp);
