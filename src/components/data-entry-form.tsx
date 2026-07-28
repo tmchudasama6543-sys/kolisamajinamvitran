@@ -228,7 +228,7 @@ export default function CenterPanel() {
         obtainedMarks: Number(values.obtainedMarks),
         percentage: parseFloat(percentage || '0'),
         enteredByUserId: user.uid,
-        submissionDateTime: serverTimestamp(),
+        submissionDateTime: new Date().toISOString(),
       };
       const photoData = {
         marksheetPhotoBase64: photos.marksheet || '',
