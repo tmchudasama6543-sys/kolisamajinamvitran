@@ -237,7 +237,6 @@ export default function CenterPanel() {
       saveStudentWithPhotosNonBlocking(firestore, studentData, photoData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'સેવ ભૂલ: ' + err.message });
       });
-      setIsSuccess(true);
       reset();
       setPhotos({ marksheet: null, aadhar: null });
       toast({ title: 'સફળ!', description: 'માહિતી સફળતાપૂર્વક સેવ થઈ ગઈ છે.' });
