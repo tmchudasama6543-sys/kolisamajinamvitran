@@ -38,14 +38,15 @@ const DialogContent = React.forwardRef<
   return (
     <DialogPortal>
       <DialogOverlay />
-      <div className={cn(
-        "fixed inset-0 z-50 overflow-y-auto flex items-center justify-center pointer-events-none",
-        isFullscreen ? "p-0" : "p-4 sm:p-8"
-      )}>
+      <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
+        <div className={cn(
+          "flex min-h-full items-center justify-center",
+          isFullscreen ? "p-0" : "p-4 sm:p-8"
+        )}>
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "relative pointer-events-auto my-auto grid w-full gap-0 border bg-background shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[2rem] overflow-hidden max-h-[90vh] flex flex-col",
+            "relative pointer-events-auto w-full gap-0 border bg-background shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[2rem] overflow-hidden flex flex-col",
             isFullscreen ? "max-h-screen h-screen w-screen rounded-none border-none" : "max-w-lg md:max-w-2xl",
             className
           )}
@@ -60,6 +61,7 @@ const DialogContent = React.forwardRef<
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         </DialogPrimitive.Content>
+        </div>
       </div>
     </DialogPortal>
   )

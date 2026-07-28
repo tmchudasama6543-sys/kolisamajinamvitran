@@ -33,15 +33,17 @@ const AlertDialogContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPortal>
     <AlertDialogOverlay />
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-8 pointer-events-none">
-      <AlertDialogPrimitive.Content
-        ref={ref}
-        className={cn(
-          "relative pointer-events-auto my-auto grid w-full max-w-lg md:max-w-xl gap-0 border bg-background shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col",
-          className
-        )}
-        {...props}
-      />
+    <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
+      <div className="flex min-h-full items-center justify-center p-4 sm:p-8">
+        <AlertDialogPrimitive.Content
+          ref={ref}
+          className={cn(
+            "relative pointer-events-auto w-full max-w-lg md:max-w-xl gap-0 border bg-background shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[2.5rem] overflow-hidden flex flex-col",
+            className
+          )}
+          {...props}
+        />
+      </div>
     </div>
   </AlertDialogPortal>
 ))
