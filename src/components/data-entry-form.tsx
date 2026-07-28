@@ -21,6 +21,7 @@ import imageCompression from 'browser-image-compression';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'motion/react';
+import { compressDataUrl } from '@/lib/image';
 
 const gujaratiRegex = /^[\u0A80-\u0AFF\s\.\(\)\-]+$/;
 
@@ -44,18 +45,6 @@ function normalizeBase64(data: string): string {
   if (!data) return data;
   const cleanData = data.replace(/[\r\n\s]+/g, '');
   return cleanData.startsWith('data:') ? cleanData : `data:image/jpeg;base64,${cleanData}`;
-}
-
-function dataUrlToFile(dataUrl: string, filename: string): File {
-  const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, { type: mime });
 }
 
 export default function CenterPanel() {
@@ -465,24 +454,19 @@ export default function CenterPanel() {
         onCapture={async (dataUrl) => {
           if (cameraTarget) {
             setCompressing(p => ({ ...p, [cameraTarget]: true }));
-            try {
-              const file = dataUrlToFile(dataUrl, "camera-photo.jpg");
-              
-              const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
-              const compressedFile = await imageCompression(file, options);
-              
-              const reader = new FileReader();
-              reader.readAsDataURL(compressedFile);
-              reader.onloadend = () => {
-                const base64data = reader.result as string;
-                setPhotos(p => ({ ...p, [cameraTarget]: base64data }));
+            // Canvas-based compression: 100% compatible with Android WebView
+            // Does NOT use WebWorkers which are often blocked in WebView
+            compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 })
+              .then(compressed => {
+                setPhotos(p => ({ ...p, [cameraTarget]: compressed }));
+              })
+              .catch(() => {
+                // Canvas fallback failed — store raw but warn
+                setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
+              })
+              .finally(() => {
                 setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
-              };
-            } catch (error) {
-              console.error("Camera Compression error", error);
-              setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
-              setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
-            }
+              });
           }
           setCameraTarget(null);
         }}

@@ -179,18 +179,6 @@ export default function StudentsListPage() {
     return `data:image/jpeg;base64,${cleanData}`;
   };
 
-  const dataUrlToFile = (dataUrl: string, filename: string): File => {
-    const arr = dataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, { type: mime });
-  };
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const callback = (field: 'marksheet' | 'aadhar', base64Data: string) => {
@@ -942,31 +930,32 @@ export default function StudentsListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* In-App Camera Modal */}
       <CameraModal
         open={cameraTarget !== null}
         onClose={() => setCameraTarget(null)}
-        onCapture={async (dataUrl) => {
+        onCapture={(dataUrl) => {
           if (!cameraTarget) return;
           const { field, context } = cameraTarget;
-          let finalData = dataUrl;
-          try {
-            const file = dataUrlToFile(dataUrl, "camera-photo.jpg");
-            const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
-            const compressedFile = await imageCompression(file, options);
-            
-            const reader = new FileReader();
-            finalData = await new Promise((resolve) => {
-               reader.onloadend = () => resolve(reader.result as string);
-               reader.readAsDataURL(compressedFile);
+          
+          compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 })
+            .then(compressed => {
+              if (context === 'edit') {
+                setEditingStudent(prev => prev ? { ...prev, [field]: compressed } : null);
+              } else {
+                setNewStudent(prev => ({ ...prev, [field]: compressed }));
+              }
+            })
+            .catch(() => {
+               // Fallback to raw data if canvas compression somehow fails
+               if (context === 'edit') {
+                 setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
+               } else {
+                 setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
+               }
+            })
+            .finally(() => {
+               setCameraTarget(null);
             });
-          } catch { /* raw use karo */ }
-          if (context === 'edit') {
-            setEditingStudent(prev => prev ? { ...prev, [field]: finalData } : null);
-          } else {
-            setNewStudent(prev => ({ ...prev, [field]: finalData }));
-          }
-          setCameraTarget(null);
         }}
       />
     </div>
