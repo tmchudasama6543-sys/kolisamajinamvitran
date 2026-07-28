@@ -17,7 +17,7 @@ import { serverTimestamp } from 'firebase/firestore';
 import { palitanaVillages } from '@/lib/palitana-villages';
 import { academicStandards } from '@/lib/standards';
 import { cn } from '@/lib/utils';
-import { compressImageToBase64, compressDataUrl } from '@/lib/image';
+import imageCompression from 'browser-image-compression';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -76,18 +76,15 @@ export default function CenterPanel() {
   }, []);
 
   const triggerCamera = useCallback(async (field: 'marksheet' | 'aadhar') => {
-    // Kodular/Android WebViewer ma native camera use karo
     if (typeof window !== 'undefined' && (window as any).AppInventor) {
       try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
       return;
     }
-    // Browser ma camera available chhe ke nai te check karo
     if (!navigator.mediaDevices?.getUserMedia) {
       toast({ variant: 'destructive', title: 'Camera ઉપલબ્ધ નથી', description: 'આ device પર camera support નથી.' });
       return;
     }
     try {
-      // Permission ane availability check (permission dialog open nahi karo)
       const devices = await navigator.mediaDevices.enumerateDevices();
       const hasCamera = devices.some(d => d.kind === 'videoinput');
       if (!hasCamera) {
@@ -95,7 +92,6 @@ export default function CenterPanel() {
         return;
       }
     } catch (_) {
-      // enumerateDevices fail thay to modal j kholva do
     }
     setCameraTarget(field);
   }, [toast]);
@@ -111,13 +107,27 @@ export default function CenterPanel() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    
     setCompressing(p => ({ ...p, [field]: true }));
+    
     try {
-      const b64 = await compressImageToBase64(file);
-      setPhotos(p => ({ ...p, [field]: b64 }));
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      const reader = new FileReader();
+      
+      reader.readAsDataURL(compressedFile);
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        setPhotos(p => ({ ...p, [field]: base64data }));
+        setCompressing(p => ({ ...p, [field]: false }));
+      };
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: err.message });
-    } finally {
+      toast({ variant: 'destructive', title: 'ભૂલ', description: 'કોમ્પ્રેશનમાં ભૂલ: ' + err.message });
       setCompressing(p => ({ ...p, [field]: false }));
     }
   }, [toast]);
@@ -443,12 +453,28 @@ export default function CenterPanel() {
           if (cameraTarget) {
             setCompressing(p => ({ ...p, [cameraTarget]: true }));
             try {
-              const compressed = await compressDataUrl(dataUrl);
-              setPhotos(p => ({ ...p, [cameraTarget]: compressed }));
-            } catch {
-              // Compression fail thay to raw image use karo
+              const res = await fetch(dataUrl);
+              const blob = await res.blob();
+              const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
+              
+              const options = {
+                maxSizeMB: 0.5,
+                maxWidthOrHeight: 1024,
+                useWebWorker: true
+              };
+              
+              const compressedFile = await imageCompression(file, options);
+              const reader = new FileReader();
+              
+              reader.readAsDataURL(compressedFile);
+              reader.onloadend = () => {
+                const base64data = reader.result as string;
+                setPhotos(p => ({ ...p, [cameraTarget]: base64data }));
+                setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
+              };
+            } catch (error) {
+              console.error("Camera Compression error", error);
               setPhotos(p => ({ ...p, [cameraTarget]: dataUrl }));
-            } finally {
               setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
             }
           }
