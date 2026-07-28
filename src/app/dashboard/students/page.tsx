@@ -463,7 +463,8 @@ export default function StudentsListPage() {
     if (file) {
       setPhotoLoading(prev => ({ ...prev, [field]: true }));
       try {
-        const base64 = await compressImageToBase64(file);
+        const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
+        const base64 = await compressImageToBase64(file, options);
         if (window.location.hash.includes('edit')) {
           setEditingStudent(prev => prev ? { ...prev, [field]: base64 } : null);
         } else {
@@ -938,7 +939,7 @@ export default function StudentsListPage() {
           const { field, context } = cameraTarget;
           let finalData = dataUrl;
           try {
-            finalData = await compressDataUrl(dataUrl);
+            finalData = await compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 });
           } catch { /* raw use karo */ }
           if (context === 'edit') {
             setEditingStudent(prev => prev ? { ...prev, [field]: finalData } : null);

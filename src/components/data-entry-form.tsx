@@ -114,8 +114,8 @@ export default function CenterPanel() {
     
     try {
       const options = {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1024,
+        maxSizeMB: 0.2,
+        maxWidthOrHeight: 800,
         useWebWorker: true
       };
       
@@ -455,7 +455,7 @@ export default function CenterPanel() {
           if (cameraTarget) {
             setCompressing(p => ({ ...p, [cameraTarget]: true }));
             try {
-              const compressed = await compressDataUrl(dataUrl, { quality: 0.35, maxWidth: 1024 });
+              const compressed = await compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 });
               setPhotos(p => ({ ...p, [cameraTarget]: compressed }));
               setCompressing(p => ({ ...p, [cameraTarget as 'marksheet' | 'aadhar']: false }));
             } catch (error) {
