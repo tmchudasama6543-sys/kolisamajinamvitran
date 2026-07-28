@@ -372,11 +372,15 @@ export default function StudentsListPage() {
         if (!photoData.marksheetPhotoBase64 && !photoData.aadhaarPhotoBase64) {
            toast({ title: 'ફોટો નથી', description: 'આ વિદ્યાર્થીનો કોઈ ફોટો અપલોડ થયેલ નથી.' });
         } else {
+           const ensureBase64Prefix = (data: string) => {
+             if (!data) return data;
+             return data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
+           };
            setViewPhotosModal({
              isOpen: true,
              studentName: student.name,
-             marksheet: photoData.marksheetPhotoBase64 || null,
-             aadhar: photoData.aadhaarPhotoBase64 || null
+             marksheet: photoData.marksheetPhotoBase64 ? ensureBase64Prefix(photoData.marksheetPhotoBase64) : null,
+             aadhar: photoData.aadhaarPhotoBase64 ? ensureBase64Prefix(photoData.aadhaarPhotoBase64) : null
            });
         }
       } else {
@@ -880,7 +884,7 @@ export default function StudentsListPage() {
       </AlertDialog>
 
       <AlertDialog open={viewPhotosModal.isOpen} onOpenChange={(open) => !open && setViewPhotosModal(prev => ({...prev, isOpen: false}))}>
-        <AlertDialogContent className="rounded-[2rem] p-6 sm:p-8 max-w-2xl">
+        <AlertDialogContent className="rounded-[2rem] p-6 sm:p-8 max-w-2xl max-h-[85vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl sm:text-2xl font-black text-primary flex items-center justify-between">
               <span>{viewPhotosModal.studentName} ના ફોટા</span>
@@ -917,6 +921,9 @@ export default function StudentsListPage() {
               </div>
             )}
           </div>
+          <AlertDialogFooter className="mt-6 border-t-2 border-slate-100 pt-6">
+            <AlertDialogCancel className="w-full h-14 rounded-xl text-lg font-black border-2 hover:bg-slate-50">બંધ કરો (Close)</AlertDialogCancel>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
