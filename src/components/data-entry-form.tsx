@@ -76,6 +76,12 @@ export default function CenterPanel() {
   }, []);
 
   const triggerCamera = useCallback((field: 'marksheet' | 'aadhar') => {
+    // Kodular/Android WebViewer ma native camera use karo
+    if (typeof window !== 'undefined' && (window as any).AppInventor) {
+      try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
+      return; // Native camera handle karse - handleNativeImage callback aavse
+    }
+    // Regular browser ma in-app CameraModal kholo
     setCameraTarget(field);
   }, []);
 

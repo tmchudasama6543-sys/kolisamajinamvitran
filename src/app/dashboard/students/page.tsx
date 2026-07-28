@@ -196,6 +196,13 @@ export default function StudentsListPage() {
   }, []);
 
   const triggerEditCamera = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
+    const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
+    // Kodular/Android WebViewer ma native camera use karo
+    if (typeof window !== 'undefined' && (window as any).AppInventor) {
+      try { (window as any).AppInventor.setWebViewString(`camera_${fKey}`); } catch (_) {}
+      return; // Native camera handle karse
+    }
+    // Regular browser ma in-app CameraModal kholo
     const context = window.location.hash.includes('edit') ? 'edit' : 'new';
     setCameraTarget({ field, context });
   };
