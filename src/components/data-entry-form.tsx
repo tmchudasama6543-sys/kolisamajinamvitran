@@ -130,10 +130,17 @@ export default function CenterPanel() {
         setCompressing(p => ({ ...p, [field]: false }));
       };
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: 'કોમ્પ્રેશનમાં ભૂલ: ' + err.message });
-      setCompressing(p => ({ ...p, [field]: false }));
+      // Bulletproof Fallback: Canvas DataURL Compression for mobile web browsers
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        const rawBase64 = reader.result as string;
+        const compressed = compressDataUrl(rawBase64, 800, 0.7);
+        setPhotos(p => ({ ...p, [field]: compressed }));
+        setCompressing(p => ({ ...p, [field]: false }));
+      };
     }
-  }, [toast]);
+  }, []);
 
   const openPreview = (src: string) => { 
     setPreviewSrc(src); 

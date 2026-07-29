@@ -31,7 +31,6 @@ async function runWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000):
                                 errorMsg.includes('exceeded their maximum bandwidth') ||
                                 errorMsg.includes('bandwidth');
     if (isResourceExhausted && retries > 0) {
-      // Wait with exponential backoff before retrying
       await new Promise(resolve => setTimeout(resolve, delay));
       return runWithRetry(fn, retries - 1, delay * 2);
     }
@@ -67,18 +66,11 @@ export function saveStudentWithPhotosNonBlocking(db: Firestore, studentData: any
   
   const batch = writeBatch(db);
   batch.set(studentRef, studentData);
+  if (photoData && (photoData.marksheetPhotoBase64 || photoData.aadhaarPhotoBase64)) {
+    batch.set(photosRef, photoData);
+  }
   
-  // Write photos in main batch (if permission rules are active).
-  // If database rules block photos, they will be caught and ignored, but we try to do it in same batch first.
-  // Wait, if it's in the same batch, rules failure on photos will fail the student write.
-  // To keep it resilient, we write photos separately in background so metadata write NEVER fails even without rules deployed!
   const promise = runWithRetry(() => batch.commit())
-    .then(() => {
-      // Photo write is separate and catch-safe
-      runWithRetry(() => setDoc(photosRef, photoData)).catch(e => {
-        console.warn("Photos save skipped due to rules:", e);
-      });
-    })
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -102,14 +94,11 @@ export function updateStudentWithPhotosNonBlocking(db: Firestore, studentId: str
   
   const batch = writeBatch(db);
   batch.update(studentRef, studentData);
+  if (photoData && (photoData.marksheetPhotoBase64 || photoData.aadhaarPhotoBase64)) {
+    batch.set(photosRef, photoData, { merge: true });
+  }
   
   const promise = runWithRetry(() => batch.commit())
-    .then(() => {
-      // Photo update is separate and catch-safe
-      runWithRetry(() => setDoc(photosRef, photoData, { merge: true })).catch(e => {
-        console.warn("Photos update skipped due to rules:", e);
-      });
-    })
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -192,7 +181,7 @@ export async function moveDocumentToTrash(db: Firestore, sourceCollection: strin
 
     await runWithRetry(() => batch.commit());
     
-    // Move base64 photos document in background (catch-safe, preventing rules issues from blocking primary delete action)
+    // Move base64 photos document in background
     try {
       const photosRef = doc(db, 'student_photos', docId);
       const trashPhotosRef = doc(db, 'trash_student_photos', docId);
@@ -203,7 +192,6 @@ export async function moveDocumentToTrash(db: Firestore, sourceCollection: strin
         subBatch.delete(photosRef);
         await runWithRetry(() => subBatch.commit());
       } else if (marksheetPhotoBase64 || aadhaarPhotoBase64) {
-        // Legacy document: extract photos from old student document into trash_student_photos
         await runWithRetry(() => setDoc(trashPhotosRef, {
           marksheetPhotoBase64: marksheetPhotoBase64 || "",
           aadhaarPhotoBase64: aadhaarPhotoBase64 || ""
@@ -241,7 +229,7 @@ export async function restoreDocumentFromTrash(db: Firestore, sourceCollection: 
 
     await runWithRetry(() => batch.commit());
     
-    // Restore base64 photos document in background (catch-safe)
+    // Restore base64 photos document in background
     try {
       const trashPhotosRef = doc(db, 'trash_student_photos', docId);
       const photosRef = doc(db, 'student_photos', docId);
