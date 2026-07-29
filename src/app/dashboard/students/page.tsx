@@ -32,6 +32,8 @@ import { compressImageToBase64, compressDataUrl } from '@/lib/image';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
 import { CameraModal } from '@/components/CameraModal';
+import * as XLSX from 'xlsx';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 type StudentData = {
   id: string;
@@ -527,44 +529,118 @@ export default function StudentsListPage() {
     }
   }, [toast]);
 
+  const generateRankedStudents = useCallback(() => {
+    if (!filteredStudents || filteredStudents.length === 0) return { topRankers: [], remaining: [] };
+
+    const groupedByStandard: Record<string, typeof filteredStudents> = {};
+    filteredStudents.forEach(s => {
+      const std = s.standard || 'Unknown';
+      if (!groupedByStandard[std]) groupedByStandard[std] = [];
+      groupedByStandard[std].push(s);
+    });
+
+    const topRankers: any[] = [];
+    const remaining: any[] = [];
+
+    const sortedStandards = Object.keys(groupedByStandard).sort((a, b) => {
+      const idxA = academicStandards.indexOf(a);
+      const idxB = academicStandards.indexOf(b);
+      if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+
+    sortedStandards.forEach(std => {
+      const stdStudents = groupedByStandard[std].sort((a, b) => {
+        const pctA = typeof a.percentage === 'number' ? a.percentage : parseFloat((a.percentage as any) || '0');
+        const pctB = typeof b.percentage === 'number' ? b.percentage : parseFloat((b.percentage as any) || '0');
+        return pctB - pctA;
+      });
+
+      let currentRank = 1;
+      let previousPct: number | null = null;
+
+      stdStudents.forEach((s) => {
+        const pct = typeof s.percentage === 'number' ? s.percentage : parseFloat((s.percentage as any) || '0');
+        
+        if (previousPct !== null && pct < previousPct) {
+          currentRank++;
+        }
+        
+        const row = {
+          'ધોરણ (Standard)': s.standard,
+          'ક્રમ (Rank)': currentRank,
+          'વિદ્યાર્થીનું નામ (Student Name)': s.name,
+          'ટકાવારી (Percentage)': `${pct.toFixed(2)}%`,
+          'મેળવેલ ગુણ (Obtained Marks)': s.obtainedMarks || 0,
+          'કુલ ગુણ (Total Marks)': s.totalMarks || 0,
+          'ગામનું નામ (Village Name)': s.villageName,
+          'મોબાઈલ નંબર (Mobile Number)': s.mobileNumber
+        };
+
+        if (currentRank <= 3) {
+          topRankers.push(row);
+        } else {
+          remaining.push(row);
+        }
+
+        previousPct = pct;
+      });
+    });
+
+    return { topRankers, remaining };
+  }, [filteredStudents]);
+
+  const handleDownloadTopRankers = useCallback(() => {
+    const { topRankers } = generateRankedStudents();
+    if (topRankers.length === 0) {
+       toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
+       return;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(topRankers);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Top Rankers");
+    XLSX.writeFile(workbook, `Top_Rankers_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    toast({ title: 'સફળ!', description: 'ટોપર વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
+  }, [generateRankedStudents, toast]);
+
+  const handleDownloadRemaining = useCallback(() => {
+    const { remaining } = generateRankedStudents();
+    if (remaining.length === 0) {
+       toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
+       return;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(remaining);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Remaining Students");
+    XLSX.writeFile(workbook, `Remaining_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    toast({ title: 'સફળ!', description: 'બાકીના વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
+  }, [generateRankedStudents, toast]);
+
   const handleExportToExcel = useCallback(() => {
     if (!filteredStudents || filteredStudents.length === 0) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
-      return;
+       toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
+       return;
     }
-    const headers = [
-      'ક્રમ (Rank)',
-      'વિદ્યાર્થીનું નામ (Student Name)',
-      'ધોરણ (Standard)',
-      'ગામનું નામ (Village Name)',
-      'મોબાઈલ નંબર (Mobile Number)',
-      'મેળવેલ ગુણ (Obtained Marks)',
-      'કુલ ગુણ (Total Marks)',
-      'ટકાવારી (Percentage)'
-    ];
-    const rows = filteredStudents.map((s, index) => {
-      const pct = typeof s.percentage === 'number' ? s.percentage : parseFloat(s.percentage || '0');
-      return [
-        index + 1,
-        s.name ? `"${s.name.replace(/"/g, '""')}"` : '""',
-        s.standard ? `"${s.standard.replace(/"/g, '""')}"` : '""',
-        s.villageName ? `"${s.villageName.replace(/"/g, '""')}"` : '""',
-        s.mobileNumber ? `"${s.mobileNumber}"` : '""',
-        s.obtainedMarks || 0,
-        s.totalMarks || 0,
-        `"${pct.toFixed(2)}%"`
-      ];
+    const data = filteredStudents.map((s, index) => {
+      const pct = typeof s.percentage === 'number' ? s.percentage : parseFloat((s.percentage as any) || '0');
+      return {
+        'ક્રમ (Rank)': index + 1,
+        'વિદ્યાર્થીનું નામ (Student Name)': s.name,
+        'ધોરણ (Standard)': s.standard,
+        'ગામનું નામ (Village Name)': s.villageName,
+        'ટકાવારી (Percentage)': `${pct.toFixed(2)}%`,
+        'મેળવેલ ગુણ (Obtained Marks)': s.obtainedMarks || 0,
+        'કુલ ગુણ (Total Marks)': s.totalMarks || 0,
+        'મોબાઈલ નંબર (Mobile Number)': s.mobileNumber
+      };
     });
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Koli_Samaj_Merit_List_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast({ title: 'સફળ!', description: 'એક્સેલ ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "All Students");
+    XLSX.writeFile(workbook, `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    toast({ title: 'સફળ!', description: 'તમામ વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [filteredStudents, toast]);
 
   if (userLoading) return <div className="p-10"><Skeleton className="h-[70vh] w-full rounded-3xl" /></div>;
@@ -809,7 +885,24 @@ export default function StudentsListPage() {
              <Button onClick={handleFixDatabase} disabled={isFixingDb} className="h-12 px-6 text-base font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
                {isFixingDb ? <Loader2 className="h-5 w-5 animate-spin" /> : "🛠️"} ક્લીનઅપ
              </Button>
-             <Button onClick={handleExportToExcel} className="h-12 px-6 text-base font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><FileDown className="h-5 w-5" /> એક્સેલ ડાઉનલોડ ({filteredStudents.length})</Button>
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button className="h-12 px-6 text-base font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
+                   <FileDown className="h-5 w-5" /> એક્સેલ ડાઉનલોડ ({filteredStudents.length})
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent className="w-64 font-black rounded-xl p-2 z-[200]">
+                 <DropdownMenuItem onSelect={handleDownloadTopRankers} className="h-12 text-sm cursor-pointer rounded-lg hover:bg-indigo-50">
+                   🏆 ટોપર વિદ્યાર્થીઓ (Rank 1 થી 3)
+                 </DropdownMenuItem>
+                 <DropdownMenuItem onSelect={handleDownloadRemaining} className="h-12 text-sm cursor-pointer rounded-lg hover:bg-indigo-50">
+                   👥 બાકીના વિદ્યાર્થીઓ (અન્ય)
+                 </DropdownMenuItem>
+                 <DropdownMenuItem onSelect={handleExportToExcel} className="h-12 text-sm cursor-pointer rounded-lg hover:bg-indigo-50">
+                   📋 તમામ વિદ્યાર્થીઓ (All)
+                 </DropdownMenuItem>
+               </DropdownMenuContent>
+             </DropdownMenu>
              <Button onClick={openNew} className="h-12 px-6 text-base font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><Users className="h-5 w-5" /> નવી એન્ટ્રી ઉમેરો</Button>
           </div>
       </div>

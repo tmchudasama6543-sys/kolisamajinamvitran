@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, RefreshCw, Camera, Lock, CheckCircle2, Save, Image, Trash2, Eye, X, ZoomIn, ZoomOut, Download } from 'lucide-react';
 import { CameraModal } from '@/components/CameraModal';
 import { useUser, useFirebase, saveStudentWithPhotosNonBlocking } from '@/firebase';
@@ -282,7 +283,7 @@ export default function CenterPanel() {
                   <FormItem>
                     <FormLabel className="font-black text-sm uppercase tracking-wider text-slate-700">ગામનું નામ</FormLabel>
                     <FormControl>
-                      <SearchableSelect options={palitanaVillages.map(v => ({ label: v, value: v }))} value={field.value} onChange={field.onChange} placeholder="ગામ પસંદ કરો..." searchPlaceholder="ગામ શોધો..." />
+                      <SearchableSelect options={palitanaVillages} value={field.value} onSelect={field.onChange} placeholder="ગામ પસંદ કરો..." label="ગામ" />
                     </FormControl>
                     <FormMessage className="font-bold text-rose-500" />
                   </FormItem>
@@ -292,7 +293,7 @@ export default function CenterPanel() {
                   <FormItem>
                     <FormLabel className="font-black text-sm uppercase tracking-wider text-slate-700">ધોરણ (Standard)</FormLabel>
                     <FormControl>
-                      <SearchableSelect options={academicStandards.map(s => ({ label: s, value: s }))} value={field.value} onChange={field.onChange} placeholder="ધોરણ પસંદ કરો..." searchPlaceholder="ધોરણ શોધો..." />
+                      <SearchableSelect options={academicStandards} value={field.value} onSelect={field.onChange} placeholder="ધોરણ પસંદ કરો..." label="ધોરણ" />
                     </FormControl>
                     <FormMessage className="font-bold text-rose-500" />
                   </FormItem>
