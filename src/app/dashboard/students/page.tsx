@@ -113,6 +113,7 @@ export default function StudentsListPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [isFixingDb, setIsFixingDb] = useState(false);
+  const [whatsappTemplate, setWhatsappTemplate] = useState('નમસ્કાર {નામ}, તમને તળપદા કોળી સમાજ ઇનામ વિતરણમાં ઇનામ મળવા પાત્ર છે. તમારો સંપર્ક નંબર: {મોબાઈલ}.');
 
   const [studentToDelete, setStudentToDelete] = useState<StudentData | null>(null);
   const [showBulkTrashConfirm, setShowBulkTrashConfirm] = useState(false);
@@ -631,6 +632,19 @@ export default function StudentsListPage() {
         </div>
       </Card>
 
+      <Card className="rounded-[1.5rem] sm:rounded-[2.5rem] border-none shadow-xl bg-green-50 p-4 sm:p-6 mb-4">
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase text-green-700 tracking-widest px-1">WhatsApp મેસેજ ટેમ્પલેટ (મોકલવા માટે)</label>
+          <Input 
+            value={whatsappTemplate} 
+            onChange={e => setWhatsappTemplate(e.target.value)} 
+            className="h-12 rounded-xl border-2 font-bold bg-white text-slate-900 border-green-200 focus-visible:ring-green-500" 
+            placeholder="દા.ત. નમસ્કાર {નામ}, તમને ઇનામ મળવા પાત્ર છે..."
+          />
+          <p className="text-[10px] font-bold text-green-600 px-1">નોંધ: <strong>&#123;નામ&#125;</strong> અને <strong>&#123;મોબાઈલ&#125;</strong> લખવાથી ત્યાં આપોઆપ વિદ્યાર્થીનું નામ અને નંબર આવી જશે.</p>
+        </div>
+      </Card>
+
       <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[3.5rem] overflow-hidden bg-white relative">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
@@ -658,7 +672,11 @@ export default function StudentsListPage() {
                     <TableCell className="text-center"><Badge className="px-4 py-1 rounded-full bg-indigo-50 border-none text-lg font-black text-indigo-600">{(typeof s.percentage === 'number' ? s.percentage : parseFloat((s.percentage as any) || '0')).toFixed(2)}%</Badge></TableCell>
                     <TableCell className="p-6 text-right">
                       <div className="flex justify-end gap-2">
-
+                         <a href={`https://wa.me/91${s.mobileNumber}?text=${encodeURIComponent(whatsappTemplate.replace('{નામ}', s.name).replace('{મોબાઈલ}', s.mobileNumber))}`} target="_blank" rel="noopener noreferrer">
+                           <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-2 border-green-500 text-green-600 hover:bg-green-50 transition-all shadow-sm" title="WhatsApp મેસેજ મોકલો">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+                           </Button>
+                         </a>
                          <Button onClick={() => handleEditClick(s)} size="icon" variant="outline" className="h-12 w-12 rounded-xl border-2 border-primary text-primary hover:bg-primary/5 transition-all"><Edit3 className="h-5 w-5" /></Button>
                          <Button onClick={() => setStudentToDelete(s)} variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-rose-500 hover:bg-rose-50 transition-all" title="ટ્રેશ કરો"><Trash2 className="h-5 w-5" /></Button>
                       </div>
