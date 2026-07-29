@@ -188,7 +188,7 @@ export default function StudentsListPage() {
 
   const filteredStudents = useMemo(() => {
     if (!deferredStudents) return [];
-    return students.filter(s => {
+    return deferredStudents.filter(s => {
       const matchesSearch = (s.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) || (s.mobileNumber || '').includes(debouncedSearch);
       const matchesVillage = villageFilter === 'all' || s.villageName === villageFilter;
       const matchesStandard = standardFilter === 'all' || s.standard === standardFilter;
