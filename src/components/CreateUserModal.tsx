@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, PlusCircle, X, ShieldCheck, UserCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
@@ -108,21 +107,33 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
           
           <div className="space-y-2">
             <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">એકાઉન્ટનો પ્રકાર</Label>
-            <Select value={role} onValueChange={(val: any) => setRole(val)}>
-              <SelectTrigger className="h-12 rounded-xl">
-                <SelectValue placeholder="પ્રકાર પસંદ કરો" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="data_entry">
-                  <div className="flex items-center gap-2 font-bold"><UserCircle className="h-4 w-4 text-[#059669]" /> ડેટા એન્ટ્રી ઓપરેટર</div>
-                </SelectItem>
-                {adminEmail.toLowerCase() === 'jayhind6543@gmail.com' && (
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4 text-[#4F46E5]" /> એડમિન (Admin)</div>
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setRole('data_entry')}
+                className={`h-14 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                  role === 'data_entry' 
+                    ? 'border-[#059669] bg-[#ECFDF5] text-[#059669] shadow-sm' 
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <UserCircle className="h-5 w-5" /> ડેટા એન્ટ્રી
+              </button>
+
+              {adminEmail.toLowerCase() === 'jayhind6543@gmail.com' && (
+                <button
+                  type="button"
+                  onClick={() => setRole('admin')}
+                  className={`h-14 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                    role === 'admin' 
+                      ? 'border-[#4F46E5] bg-indigo-50 text-[#4F46E5] shadow-sm' 
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <ShieldCheck className="h-5 w-5" /> એડમિન (Admin)
+                </button>
+              )}
+            </div>
           </div>
           
           <Button 
