@@ -87,9 +87,7 @@ export default function LoginForm() {
   async function handleAuth(values: FormValues, mode: 'signin' | 'signup', role: 'admin' | 'data_entry') {
     setLoading(true);
     try {
-      if (role === 'admin' && values.email !== ADMIN_EMAIL) {
-        throw new Error('તમે એડમિન તરીકે સાઇન-અપ કે લોગિન કરી શકતા નથી.');
-      }
+      // Allow all registered admins to log in via the admin tab
 
       if (mode === 'signin') {
         await initiateEmailSignIn(auth, values.email, values.password);
