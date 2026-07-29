@@ -46,7 +46,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-slate-50/50">
+      <div className="flex h-[100dvh] w-full bg-slate-50/50 overflow-hidden">
         <AppSidebar user={user} />
         <SidebarInset className="flex flex-col flex-1 min-w-0 overflow-hidden w-full max-w-full">
           {/* Top Header Bar */}

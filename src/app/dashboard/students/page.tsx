@@ -132,6 +132,14 @@ export default function StudentsListPage() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  useEffect(() => {
+    if (isAddingNew || editingStudent) {
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
+    }
+  }, [isAddingNew, editingStudent]);
+
   const openNew = () => {
     setNewStudent({
       name: '',
