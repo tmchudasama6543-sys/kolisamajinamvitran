@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Users, Trash2, MapPin, Edit3, Save, Loader2, X, Phone, Copy, FileDown, CheckSquare, AlertTriangle, RefreshCw, Download, ArrowLeft } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback, useRef, useId, useDeferredValue } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useId } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -181,20 +181,19 @@ export default function StudentsListPage() {
   );
 
   const { data: students, isLoading } = useCollection<StudentData>(studentsQuery);
-  const deferredStudents = useDeferredValue(students);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
   const filteredStudents = useMemo(() => {
-    if (!deferredStudents) return [];
-    return deferredStudents.filter(s => {
+    if (!students) return [];
+    return students.filter(s => {
       const matchesSearch = (s.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) || (s.mobileNumber || '').includes(debouncedSearch);
       const matchesVillage = villageFilter === 'all' || s.villageName === villageFilter;
       const matchesStandard = standardFilter === 'all' || s.standard === standardFilter;
       return matchesSearch && matchesVillage && matchesStandard;
     });
-  }, [deferredStudents, debouncedSearch, villageFilter, standardFilter]);
+  }, [students, debouncedSearch, villageFilter, standardFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
