@@ -95,7 +95,7 @@ export function AppSidebar({ user }: { user: AppUser }) {
                 tooltip="ડેશબોર્ડ"
                 className={cn("h-12 rounded-xl font-bold transition-all", pathname === '/dashboard' && (isAdmin ? "bg-[#EEF2FF] text-[#4F46E5]" : "bg-[#F0FDFA] text-[#10B981]"))}
               >
-                <Link href="/dashboard" prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
+                <Link href="/dashboard" replace={true} prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
                   <LayoutDashboard className="h-5 w-5" />
                   <span>ડેશબોર્ડ</span>
                 </Link>
@@ -115,7 +115,7 @@ export function AppSidebar({ user }: { user: AppUser }) {
                     tooltip="વિદ્યાર્થીઓ"
                     className={cn("h-12 rounded-xl font-bold transition-all", pathname.startsWith('/dashboard/students') && "bg-[#EEF2FF] text-[#4F46E5]")}
                   >
-                    <Link href="/dashboard/students" prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
+                    <Link href="/dashboard/students" replace={true} prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
                       <Users className="h-5 w-5" />
                       <span>વિદ્યાર્થીઓ</span>
                     </Link>
@@ -128,7 +128,7 @@ export function AppSidebar({ user }: { user: AppUser }) {
                     tooltip="વપરાશકર્તાઓ"
                     className={cn("h-12 rounded-xl font-bold transition-all", pathname.startsWith('/dashboard/users') && "bg-[#F0FDFA] text-[#0D9488]")}
                   >
-                    <Link href="/dashboard/users" prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
+                    <Link href="/dashboard/users" replace={true} prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
                       <UserCog className="h-5 w-5" />
                       <span>વપરાશકર્તાઓ</span>
                     </Link>
@@ -141,7 +141,7 @@ export function AppSidebar({ user }: { user: AppUser }) {
                     tooltip="ટ્રેશ ફોલ્ડર"
                     className={cn("h-12 rounded-xl font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 transition-all", pathname.startsWith('/dashboard/trash') && "bg-rose-50 text-rose-600")}
                   >
-                    <Link href="/dashboard/trash" prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
+                    <Link href="/dashboard/trash" replace={true} prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
                       <Trash2 className="h-5 w-5" />
                       <span>ટ્રેશ ફોલ્ડર</span>
                     </Link>
