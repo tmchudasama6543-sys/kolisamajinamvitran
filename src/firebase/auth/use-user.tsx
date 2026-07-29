@@ -58,15 +58,7 @@ export function useUser(): UserHookResult {
         return;
       }
 
-      // 1.5. Immediate check for approved Center Panel user by Email
-      if (emailLower === CENTER_EMAIL) {
-        const centerUser: AppUser = { ...firebaseUser, role: 'data_entry', accessApproved: true };
-        globalAppUser = centerUser;
-        globalUserLoading = false;
-        setAppUser(centerUser);
-        setLoading(false);
-        return;
-      }
+      // 1.5. Center Panel users will now correctly fetch from database.
 
       // 2. Fetch fresh live profile directly from server first (bypassing stale browser cache)
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
