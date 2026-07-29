@@ -156,7 +156,7 @@ export default function StudentsListPage() {
 
   const closeNew = () => {
     setIsAddingNew(false);
-    if (window.location.hash.includes('new')) window.location.hash = '';
+    if (window.location.hash.includes('new')) window.history.back();
   };
 
   const openPreview = (imgSrc: string) => {
@@ -169,15 +169,13 @@ export default function StudentsListPage() {
     setZoomLevel(1);
     setPosition({ x: 0, y: 0 });
     if (window.location.hash.includes('preview')) {
-      if (window.location.hash.includes('edit')) window.location.hash = 'edit';
-      else if (window.location.hash.includes('new')) window.location.hash = 'new';
-      else window.location.hash = '';
+      window.history.back();
     }
   };
 
   const closeEdit = () => {
     setEditingStudent(null);
-    if (window.location.hash.includes('edit')) window.location.hash = '';
+    if (window.location.hash.includes('edit')) window.history.back();
   };
 
   const ensureBase64Prefix = (data: string) => {

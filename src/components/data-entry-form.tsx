@@ -146,7 +146,7 @@ export default function CenterPanel() {
     setPreviewSrc(null); 
     setZoom(1); 
     setPan({ x: 0, y: 0 }); 
-    if (window.location.hash.includes('preview')) window.location.hash = '';
+    if (window.location.hash.includes('preview')) window.history.back();
   };
 
   const onMove = useCallback((e: any) => {
