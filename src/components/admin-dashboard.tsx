@@ -112,19 +112,25 @@ export default function AdminPanel() {
         { label: '60% થી ઓછા', count: 0, barColor: 'bg-slate-400' },
       ],
       villageDist: [],
+      smartVillageDist: [] as [string, number, number][],
       standardDist: [],
     };
 
     const vMap = new Map<string, number>();
+    const vSumMap = new Map<string, number>();
     const sMap = new Map<string, number>();
     let sumPct = 0;
     let highCount = 0;
     let g90 = 0, g80 = 0, g70 = 0, g60 = 0, gLess = 0;
 
     for (const s of students) {
-      if (s.villageName) vMap.set(s.villageName, (vMap.get(s.villageName) || 0) + 1);
-      if (s.standard) sMap.set(s.standard, (sMap.get(s.standard) || 0) + 1);
       const pct = typeof s.percentage === 'number' ? s.percentage : parseFloat(s.percentage || '0');
+      if (s.villageName) {
+         vMap.set(s.villageName, (vMap.get(s.villageName) || 0) + 1);
+         vSumMap.set(s.villageName, (vSumMap.get(s.villageName) || 0) + pct);
+      }
+      if (s.standard) sMap.set(s.standard, (sMap.get(s.standard) || 0) + 1);
+      
       sumPct += pct;
       if (pct >= 80) highCount++;
       if (pct >= 90) g90++;
@@ -150,6 +156,11 @@ export default function AdminPanel() {
         { label: '60% થી ઓછા', count: gLess, barColor: 'bg-slate-400' },
       ],
       villageDist: Array.from(vMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 15),
+      smartVillageDist: Array.from(vMap.entries())
+        .filter(([_, count]) => count >= 2)
+        .map(([v, count]) => [v, count, vSumMap.get(v)! / count] as [string, number, number])
+        .sort((a, b) => b[2] - a[2])
+        .slice(0, 10),
       standardDist: Array.from(sMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 15),
     };
   }, [students]);
@@ -322,6 +333,45 @@ export default function AdminPanel() {
             </Card>
           ))}
         </div>
+
+        {/* Smart Village Analytics */}
+        <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-xl bg-white overflow-hidden mt-2">
+          <CardHeader className="p-5 border-b bg-rose-50/50 flex flex-row items-center gap-3">
+            <div className="p-2.5 bg-rose-100 text-rose-700 rounded-xl shadow-sm">
+              <Award className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-black uppercase tracking-tight text-slate-900">સ્માર્ટ ગામ (ટોપ ૧૦)</h3>
+              <p className="text-xs font-bold text-slate-400">સૌથી ઊંચી સરેરાશ ટકાવારી ધરાવતા ગામો (ઓછામાં ઓછા ૨ વિદ્યાર્થી)</p>
+            </div>
+          </CardHeader>
+          <CardContent className="p-5 space-y-4">
+            {stats.smartVillageDist.length === 0 ? (
+              <p className="text-xs font-bold text-slate-400 text-center py-4">કોઈ ડેટા ઉપલબ્ધ નથી</p>
+            ) : (
+              stats.smartVillageDist.map(([village, count, avgPct], idx) => {
+                return (
+                  <div key={village} className="space-y-1.5 flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center font-black text-rose-600 shadow-sm border border-rose-100">
+                        #{idx + 1}
+                      </div>
+                      <div>
+                        <div className="text-sm font-black text-slate-800">{village}</div>
+                        <div className="text-xs font-bold text-slate-400">{count} વિદ્યાર્થીઓ</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-none px-3 py-1 text-sm font-black rounded-xl">
+                        {avgPct.toFixed(2)}%
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
       </div>
       {PreviewModal}
     </>
