@@ -137,6 +137,11 @@ export default function StudentsListPage() {
     if (window.location.hash.includes('new')) window.history.back();
   };
 
+  const closeEdit = () => {
+    setEditingStudent(null);
+    if (window.location.hash.includes('edit')) window.history.back();
+  };
+
 
 
   const studentsQuery = useMemoFirebase(
@@ -152,7 +157,7 @@ export default function StudentsListPage() {
   const filteredStudents = useMemo(() => {
     if (!students) return [];
     return students.filter(s => {
-      const matchesSearch = s.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) || s.mobileNumber?.includes(debouncedSearch);
+      const matchesSearch = (s.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) || (s.mobileNumber || '').includes(debouncedSearch);
       const matchesVillage = villageFilter === 'all' || s.villageName === villageFilter;
       const matchesStandard = standardFilter === 'all' || s.standard === standardFilter;
       return matchesSearch && matchesVillage && matchesStandard;
@@ -191,7 +196,7 @@ export default function StudentsListPage() {
       for (const s of selectedStudents) {
         const sourceRef = doc(firestore, 'students', s.id);
         const trashRef = doc(firestore, 'trash_students', s.id);
-        const { marksheetPhotoBase64, aadhaarPhotoBase64, ...cleanData } = s;
+        const cleanData = s;
         batch.set(trashRef, { ...cleanData, deletedAt: new Date().toISOString(), deletedBy: user.uid, originalId: s.id });
         batch.delete(sourceRef);
         deleteDocumentNonBlocking(doc(firestore, 'student_photos', s.id)).catch(() => {});
@@ -516,28 +521,7 @@ export default function StudentsListPage() {
           </div>
         </div>
 
-        {previewImage && (
-          <AnimatePresence>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[500] bg-black/95 flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden">
-              <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[510] flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20">
-                 <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/10 rounded-full" onClick={() => setZoomLevel(prev => Math.max(prev - 0.5, 1))}><ZoomOut className="h-6 w-6" /></Button>
-                 <span className="text-white font-black text-sm font-mono px-2">{Math.round(zoomLevel * 100)}%</span>
-                 <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/10 rounded-full" onClick={() => setZoomLevel(prev => Math.min(prev + 0.5, 5))}><ZoomIn className="h-6 w-6" /></Button>
-                 <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/10 rounded-full" onClick={() => { setZoomLevel(1); setPosition({ x: 0, y: 0 }); }}><RefreshCw className="h-5 w-5" /></Button>
-                 <div className="h-6 w-px bg-white/20 mx-1" />
-                 <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/10 rounded-full" onClick={handleDownload}><Download className="h-5 w-5" /></Button>
-              </div>
-              <div className="absolute top-6 right-6 z-[510]">
-                 <Button variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all" onClick={closePreview}><X className="h-8 w-8" /></Button>
-              </div>
-              <motion.div className="w-full h-full flex items-center justify-center overflow-hidden cursor-zoom-out p-12" onClick={closePreview}>
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
-                  <img src={previewImage} className={cn("shadow-2xl rounded-lg origin-center select-none max-w-none max-h-none ease-out", isDragging ? "cursor-grabbing transition-none" : "cursor-grab transition-transform duration-200")} style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoomLevel})`, maxHeight: '85vh', maxWidth: '95vw', objectFit: 'contain', pointerEvents: isDragging ? 'none' : 'auto' }} alt="Fullscreen Preview" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onDragStart={(e) => e.preventDefault()} />
-                </div>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
-        )}
+
       </motion.div>
     );
   }
@@ -551,9 +535,7 @@ export default function StudentsListPage() {
           </h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
-             <Button onClick={handleFixDatabase} disabled={isFixingDb} className="h-12 px-6 text-base font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
-               {isFixingDb ? <Loader2 className="h-5 w-5 animate-spin" /> : "🛠️"} ક્લીનઅપ
-             </Button>
+
              <DropdownMenu>
                <DropdownMenuTrigger asChild>
                  <Button className="h-12 px-6 text-base font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
@@ -621,12 +603,10 @@ export default function StudentsListPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center"><div className="flex flex-col"><span className="font-black text-slate-900 text-sm">{s.villageName}</span><span className="text-[10px] font-black text-slate-400 uppercase">{s.standard}</span></div></TableCell>
-                    <TableCell className="text-center"><Badge className="px-4 py-1 rounded-full bg-indigo-50 border-none text-lg font-black text-indigo-600">{s.percentage?.toFixed(2)}%</Badge></TableCell>
+                    <TableCell className="text-center"><Badge className="px-4 py-1 rounded-full bg-indigo-50 border-none text-lg font-black text-indigo-600">{(typeof s.percentage === 'number' ? s.percentage : parseFloat((s.percentage as any) || '0')).toFixed(2)}%</Badge></TableCell>
                     <TableCell className="p-6 text-right">
                       <div className="flex justify-end gap-2">
-                         <Button onClick={() => handleViewPhotosClick(s)} size="icon" variant="outline" className="h-12 w-12 rounded-xl border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 transition-all" title="ફોટા જુઓ">
-                           {isFetchingPhotosForView === s.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Eye className="h-5 w-5" />}
-                         </Button>
+
                          <Button onClick={() => handleEditClick(s)} size="icon" variant="outline" className="h-12 w-12 rounded-xl border-2 border-primary text-primary hover:bg-primary/5 transition-all"><Edit3 className="h-5 w-5" /></Button>
                          <Button onClick={() => setStudentToDelete(s)} variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-rose-500 hover:bg-rose-50 transition-all" title="ટ્રેશ કરો"><Trash2 className="h-5 w-5" /></Button>
                       </div>
@@ -716,49 +696,7 @@ export default function StudentsListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={viewPhotosModal.isOpen} onOpenChange={(open) => !open && setViewPhotosModal(prev => ({...prev, isOpen: false}))}>
-        <AlertDialogContent className="rounded-[2rem] p-6 sm:p-8 max-w-2xl max-h-[85vh] overflow-y-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl sm:text-2xl font-black text-primary flex items-center justify-between">
-              <span>{viewPhotosModal.studentName} ના ફોટા</span>
-              <Button variant="ghost" size="icon" onClick={() => setViewPhotosModal(prev => ({...prev, isOpen: false}))} className="h-10 w-10 rounded-full hover:bg-slate-100 -mr-2"><X className="h-6 w-6" /></Button>
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-2">
-            {viewPhotosModal.marksheet ? (
-              <div className="space-y-2">
-                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">📄 માર્કશીટ</span>
-                <div className="relative group aspect-[4/3] rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 flex items-center justify-center cursor-zoom-in" onClick={() => openPreview(viewPhotosModal.marksheet!)}>
-                   <img src={viewPhotosModal.marksheet} className="w-full h-full object-contain" alt="Marksheet" />
-                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">📄 માર્કશીટ</span>
-                <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-sm">ફોટો નથી</div>
-              </div>
-            )}
-            {viewPhotosModal.aadhar ? (
-              <div className="space-y-2">
-                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">🪪 આધાર કાર્ડ</span>
-                <div className="relative group aspect-[4/3] rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 flex items-center justify-center cursor-zoom-in" onClick={() => openPreview(viewPhotosModal.aadhar!)}>
-                   <img src={viewPhotosModal.aadhar} className="w-full h-full object-contain" alt="Aadhar" />
-                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <span className="text-xs font-black uppercase text-slate-500 tracking-widest">🪪 આધાર કાર્ડ</span>
-                <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-sm">ફોટો નથી</div>
-              </div>
-            )}
-          </div>
-          <AlertDialogFooter className="mt-6 border-t-2 border-slate-100 pt-6">
-            <AlertDialogCancel className="w-full h-14 rounded-xl text-lg font-black border-2 hover:bg-slate-50">બંધ કરો (Close)</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
 
 
     </div>
