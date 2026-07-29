@@ -32,7 +32,9 @@ export default function DashboardLayout({
       if (!user) {
         router.replace('/');
       } else if (user.email !== 'jayhind6543@gmail.com' && user.accessApproved === false) {
-        router.replace('/');
+        signOut(auth).then(() => {
+          router.replace('/');
+        });
       }
     }
   }, [user, loading, router]);
