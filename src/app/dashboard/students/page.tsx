@@ -331,6 +331,7 @@ export default function StudentsListPage() {
   const handleBulkTrash = async () => {
     if (selectedIds.size === 0 || !user) return;
     setIsBulkProcessing(true);
+    setShowBulkTrashConfirm(false);
     try {
       const batch = writeBatch(firestore);
       const selectedStudents = students?.filter(s => selectedIds.has(s.id)) || [];
@@ -940,15 +941,18 @@ export default function StudentsListPage() {
           <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black text-primary">ટ્રેશમાં ખસેડવા માંગો છો?</AlertDialogTitle><AlertDialogDescription className="text-lg font-bold">વિદ્યાર્થી <span className="text-rose-500 font-black">"{studentToDelete?.name}"</span> ને લિસ્ટમાંથી હટાવીને ટ્રેશ (કચરાપેટી) માં મોકલવામાં આવશે.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter className="mt-6 gap-3">
             <AlertDialogCancel className="h-14 rounded-xl border-2 font-black text-lg">ના, રહેવા દો</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
+            <AlertDialogAction onClick={() => {
               if (!studentToDelete) return;
-              try {
-                const { marksheetPhotoBase64, aadhaarPhotoBase64, ...cleanData } = studentToDelete;
-                await moveDocumentToTrash(firestore, 'students', studentToDelete.id, user?.uid || 'unknown');
-                deleteDocumentNonBlocking(doc(firestore, 'student_photos', studentToDelete.id)).catch(() => {});
-                toast({ title: 'સફળ!', description: 'વિદ્યાર્થીને ટ્રેશમાં ખસેડવામાં આવ્યો છે.' });
-              } catch (error: any) { toast({ variant: 'destructive', title: 'ભૂલ', description: 'ખસેડવામાં ભૂલ આવી: ' + error.message }); }
+              const student = studentToDelete;
               setStudentToDelete(null);
+              moveDocumentToTrash(firestore, 'students', student.id, user?.uid || 'unknown')
+                .then(() => {
+                  deleteDocumentNonBlocking(doc(firestore, 'student_photos', student.id)).catch(() => {});
+                  toast({ title: 'સફળ!', description: 'વિદ્યાર્થીને ટ્રેશમાં ખસેડવામાં આવ્યો છે.' });
+                })
+                .catch((error: any) => {
+                  toast({ variant: 'destructive', title: 'ભૂલ', description: 'ખસેડવામાં ભૂલ આવી: ' + error.message });
+                });
             }} className="h-14 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-lg">હા, ટ્રેશ કરો</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

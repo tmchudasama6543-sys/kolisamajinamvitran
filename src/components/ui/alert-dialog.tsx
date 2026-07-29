@@ -55,7 +55,7 @@ const AlertDialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-3 text-center sm:text-left p-8 sm:p-12 bg-slate-50/50 border-b shrink-0",
+      "flex flex-col space-y-3 text-center sm:text-left p-6 sm:p-12 bg-slate-50/50 border-b shrink-0",
       className
     )}
     {...props}
@@ -69,7 +69,7 @@ const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-6 p-8 sm:p-12 bg-slate-50/50 border-t shrink-0",
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-6 p-6 sm:p-12 bg-slate-50/50 border-t shrink-0",
       className
     )}
     {...props}
@@ -83,7 +83,7 @@ const AlertDialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
-    className={cn("text-3xl font-black tracking-tight text-primary uppercase py-2 leading-tight", className)}
+    className={cn("text-2xl sm:text-3xl font-black tracking-tight text-primary uppercase py-2 leading-tight break-words text-balance", className)}
     {...props}
   />
 ))
@@ -95,7 +95,7 @@ const AlertDialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Description
     ref={ref}
-    className={cn("text-lg font-bold text-muted-foreground", className)}
+    className={cn("text-base sm:text-lg font-bold text-muted-foreground break-words text-balance", className)}
     {...props}
   />
 ))
