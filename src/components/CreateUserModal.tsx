@@ -1,0 +1,133 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, PlusCircle, X, ShieldCheck, UserCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
+import { useFirestore } from '@/firebase';
+
+export default function CreateUserModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'data_entry' | 'admin'>('data_entry');
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const handleCreate = async () => {
+    if (!email || password.length < 6) {
+      toast({ variant: 'destructive', title: 'ભૂલ', description: 'કૃપા કરીને માન્ય ઈમેલ અને ઓછામાં ઓછો 6 અક્ષરનો પાસવર્ડ દાખલ કરો.' });
+      return;
+    }
+    
+    setLoading(true);
+    
+    // Initialize a temporary secondary app to create a user without logging out the admin
+    const tempAppName = 'TempApp_' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+    
+    try {
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+      const newUserId = userCredential.user.uid;
+      
+      // Add user to users collection (Auto-approved because Admin is creating it)
+      await setDoc(doc(firestore, 'users', newUserId), {
+        email: email,
+        role: role,
+        dataEntryCenterId: null,
+        accessApproved: true
+      });
+      
+      if (role === 'admin') {
+        await setDoc(doc(firestore, 'roles_admin', newUserId), {
+          email: email,
+          createdAt: new Date().toISOString()
+        });
+      }
+      
+      toast({ title: 'સફળતા', description: 'નવું એકાઉન્ટ સફળતાપૂર્વક બની ગયું છે!' });
+      onClose();
+    } catch (error: any) {
+      let errorMsg = error.message;
+      if (error.code === 'auth/email-already-in-use') errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
+      if (error.code === 'auth/weak-password') errorMsg = 'પાસવર્ડ ખૂબ નબળો છે.';
+      toast({ variant: 'destructive', title: 'એકાઉન્ટ બનાવવામાં ભૂલ', description: errorMsg });
+    } finally {
+      await deleteApp(tempApp);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 z-[1001] flex flex-col">
+        <div className="flex items-center justify-between p-6 pb-4 border-b">
+          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+            <PlusCircle className="h-6 w-6 text-primary" /> નવું એકાઉન્ટ બનાવો
+          </h2>
+          <button onClick={onClose} className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
+            <X className="h-5 w-5 text-slate-500" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-5">
+          <div className="space-y-2">
+            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">નવું ઈમેલ</Label>
+            <Input 
+              type="email" 
+              placeholder="example@email.com" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              className="h-12 rounded-xl focus-visible:ring-primary"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">પાસવર્ડ</Label>
+            <Input 
+              type="text" 
+              placeholder="ઓછામાં ઓછા 6 અક્ષર" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              className="h-12 rounded-xl focus-visible:ring-primary"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">એકાઉન્ટનો પ્રકાર</Label>
+            <Select value={role} onValueChange={(val: any) => setRole(val)}>
+              <SelectTrigger className="h-12 rounded-xl">
+                <SelectValue placeholder="પ્રકાર પસંદ કરો" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="data_entry">
+                  <div className="flex items-center gap-2 font-bold"><UserCircle className="h-4 w-4 text-[#059669]" /> ડેટા એન્ટ્રી ઓપરેટર</div>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4 text-[#4F46E5]" /> એડમિન (Admin)</div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button 
+            onClick={handleCreate} 
+            disabled={loading} 
+            className="w-full h-14 mt-4 rounded-xl font-black text-lg shadow-lg hover:scale-[1.02] transition-all"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એકાઉન્ટ બનાવો'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

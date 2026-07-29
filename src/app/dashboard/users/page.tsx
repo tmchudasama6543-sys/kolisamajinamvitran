@@ -22,6 +22,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import CreateUserModal from '@/components/CreateUserModal';
+import { PlusCircle } from 'lucide-react';
 
 type UserProfile = {
   id: string;
@@ -44,6 +46,7 @@ export default function UsersPage() {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [userToApprove, setUserToApprove] = useState<UserProfile | null>(null);
   const [userToRevoke, setUserToRevoke] = useState<UserProfile | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);
@@ -93,11 +96,16 @@ export default function UsersPage() {
 
   return (
     <div className="p-4 sm:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-12 animate-in fade-in duration-500 overflow-visible w-full px-2 sm:px-4">
-      <div className="pb-8 border-b-4 border-[#F0FDFA]">
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#0D9488] tracking-tighter flex items-center gap-3 py-2 leading-tight">
-          <ShieldCheck className="h-8 w-8 sm:h-10 sm:w-10 shrink-0" /> યુઝર કંટ્રોલ સેન્ટર
-        </h1>
-        <p className="text-slate-400 font-bold mt-2 uppercase text-xs tracking-widest">એડમિન કંટ્રોલ: ઓપરેટર મંજૂરી અને સિક્યોરિટી</p>
+      <div className="pb-8 border-b-4 border-[#F0FDFA] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#0D9488] tracking-tighter flex items-center gap-3 py-2 leading-tight">
+            <ShieldCheck className="h-8 w-8 sm:h-10 sm:w-10 shrink-0" /> યુઝર કંટ્રોલ સેન્ટર
+          </h1>
+          <p className="text-slate-400 font-bold mt-2 uppercase text-xs tracking-widest">એડમિન કંટ્રોલ: ઓપરેટર મંજૂરી અને સિક્યોરિટી</p>
+        </div>
+        <Button onClick={() => setShowCreateModal(true)} className="h-12 px-6 rounded-2xl font-black shadow-lg hover:scale-105 transition-all text-sm gap-2">
+          <PlusCircle className="h-5 w-5" /> નવું એકાઉન્ટ બનાવો
+        </Button>
       </div>
 
       <section className="space-y-6">
@@ -169,6 +177,8 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} />}
     </div>
   );
 }
