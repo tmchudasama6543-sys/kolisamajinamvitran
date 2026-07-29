@@ -339,6 +339,21 @@ export default function StudentsListPage() {
 
       let currentRank = 1;
       let previousPct: number | null = null;
+      
+      let pushedToTop = false;
+      let pushedToRemaining = false;
+      let pushedToAll = false;
+
+      const emptyRow = {
+        'ધોરણ (Standard)': '',
+        'ક્રમ (Rank)': '',
+        'વિદ્યાર્થીનું નામ (Student Name)': '',
+        'ટકાવારી (Percentage)': '',
+        'મેળવેલ ગુણ (Obtained Marks)': '',
+        'કુલ ગુણ (Total Marks)': '',
+        'ગામનું નામ (Village Name)': '',
+        'મોબાઈલ નંબર (Mobile Number)': ''
+      };
 
       stdStudents.forEach((s) => {
         const pct = typeof s.percentage === 'number' ? s.percentage : parseFloat((s.percentage as any) || '0');
@@ -358,11 +373,23 @@ export default function StudentsListPage() {
           'મોબાઈલ નંબર (Mobile Number)': s.mobileNumber
         };
 
+        if (allRanked.length > 0 && !pushedToAll) {
+          allRanked.push(emptyRow);
+          pushedToAll = true;
+        }
         allRanked.push(row);
 
         if (currentRank <= 3) {
+          if (topRankers.length > 0 && !pushedToTop) {
+            topRankers.push(emptyRow);
+            pushedToTop = true;
+          }
           topRankers.push(row);
         } else {
+          if (remaining.length > 0 && !pushedToRemaining) {
+            remaining.push(emptyRow);
+            pushedToRemaining = true;
+          }
           remaining.push(row);
         }
 
