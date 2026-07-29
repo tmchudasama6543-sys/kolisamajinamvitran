@@ -69,30 +69,43 @@ export default function UsersPage() {
   const dataEntryUsers = users?.filter(u => u.role === 'data_entry') || [];
   const pending = dataEntryUsers.filter(u => !u.accessApproved);
   const approved = dataEntryUsers.filter(u => u.accessApproved);
+  const admins = users?.filter(u => u.role === 'admin') || [];
 
-  const UserRow = ({ user }: { user: UserProfile }) => (
-    <TableRow key={user.id} className="hover:bg-slate-50 border-b last:border-none transition-all">
-      <TableCell className="p-6">
-        <div className="flex flex-col"><span className="font-black text-xl text-slate-800 tracking-tight">{user.email}</span><Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest bg-slate-100 border-none mt-1">DATA ENTRY</Badge></div>
-      </TableCell>
-      <TableCell>
-        {user.accessApproved ? (
-          <Badge className="bg-[#D1FAE5] text-[#059669] hover:bg-[#D1FAE5] border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Unlock className="h-3 w-3" /> ACTIVE</Badge>
-        ) : (
-          <Badge className="bg-rose-50 text-rose-600 hover:bg-rose-50 border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Lock className="h-3 w-3" /> LOCKED</Badge>
-        )}
-      </TableCell>
-      <TableCell className="p-6 text-right">
-        <div className="flex justify-end gap-3">
-          {!user.accessApproved ? (
-            <Button onClick={() => setUserToApprove(user)} disabled={isProcessing === user.id} className="h-12 px-6 rounded-xl font-black bg-[#059669] shadow-md hover:scale-105 transition-all text-xs">{isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />} Approve</Button>
+  const UserRow = ({ user }: { user: UserProfile }) => {
+    const isMasterAdmin = user.email === 'jayhind6543@gmail.com';
+    return (
+      <TableRow key={user.id} className="hover:bg-slate-50 border-b last:border-none transition-all">
+        <TableCell className="p-6">
+          <div className="flex flex-col">
+            <span className="font-black text-xl text-slate-800 tracking-tight">{user.email}</span>
+            {user.role === 'admin' ? (
+              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border-none mt-1">ADMINISTRATOR</Badge>
+            ) : (
+              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest bg-slate-100 border-none mt-1">DATA ENTRY</Badge>
+            )}
+          </div>
+        </TableCell>
+        <TableCell>
+          {user.accessApproved ? (
+            <Badge className="bg-[#D1FAE5] text-[#059669] hover:bg-[#D1FAE5] border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Unlock className="h-3 w-3" /> ACTIVE</Badge>
           ) : (
-            <Button onClick={() => setUserToRevoke(user)} variant="outline" disabled={isProcessing === user.id} className="h-12 px-6 rounded-xl font-black text-rose-600 border-2 hover:bg-rose-50 transition-all text-xs">{isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4 mr-2" />} Revoke</Button>
+            <Badge className="bg-rose-50 text-rose-600 hover:bg-rose-50 border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Lock className="h-3 w-3" /> LOCKED</Badge>
           )}
-        </div>
-      </TableCell>
-    </TableRow>
-  );
+        </TableCell>
+        <TableCell className="p-6 text-right">
+          <div className="flex justify-end gap-3">
+            {!user.accessApproved ? (
+              <Button onClick={() => setUserToApprove(user)} disabled={isProcessing === user.id} className="h-12 px-6 rounded-xl font-black bg-[#059669] shadow-md hover:scale-105 transition-all text-xs">{isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />} Approve</Button>
+            ) : (
+              !isMasterAdmin && (
+                <Button onClick={() => setUserToRevoke(user)} variant="outline" disabled={isProcessing === user.id} className="h-12 px-6 rounded-xl font-black text-rose-600 border-2 hover:bg-rose-50 transition-all text-xs">{isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4 mr-2" />} Revoke</Button>
+              )
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   return (
     <div className="p-4 sm:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-12 animate-in fade-in duration-500 overflow-visible w-full px-2 sm:px-4">
@@ -121,6 +134,14 @@ export default function UsersPage() {
         <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-[#059669]">
           <CardContent className="p-0 overflow-x-auto"><Table><TableHeader className="bg-[#F0FDFA]"><TableRow><TableHead className="p-6 font-black text-[#059669]">પ્રોફાઇલ</TableHead><TableHead className="font-black text-[#059669]">સ્ટેટસ</TableHead><TableHead className="text-right p-6 font-black text-[#059669]">એક્શન</TableHead></TableRow></TableHeader>
           <TableBody>{usersLoading ? <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow> : approved.length > 0 ? approved.map(u => <UserRow key={u.id} user={u} />) : <TableRow><TableCell colSpan={3} className="p-20 text-center font-black italic text-slate-300">હજુ સુધી કોઈ મંજૂરી આપી નથી.</TableCell></TableRow>}</TableBody></Table></CardContent>
+        </Card>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-xl font-black text-[#4F46E5] uppercase tracking-tight flex items-center gap-2 px-2"><ShieldCheck className="h-5 w-5" /> એડમિનિસ્ટ્રેટર્સ (Admins)</h2>
+        <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-[#4F46E5]">
+          <CardContent className="p-0 overflow-x-auto"><Table><TableHeader className="bg-indigo-50"><TableRow><TableHead className="p-6 font-black text-[#4F46E5]">પ્રોફાઇલ</TableHead><TableHead className="font-black text-[#4F46E5]">સ્ટેટસ</TableHead><TableHead className="text-right p-6 font-black text-[#4F46E5]">એક્શન</TableHead></TableRow></TableHeader>
+          <TableBody>{usersLoading ? <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow> : admins.length > 0 ? admins.map(u => <UserRow key={u.id} user={u} />) : <TableRow><TableCell colSpan={3} className="p-20 text-center font-black italic text-slate-300">કોઈ એડમિન નથી.</TableCell></TableRow>}</TableBody></Table></CardContent>
         </Card>
       </section>
 
