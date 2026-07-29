@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, ShieldCheck, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Loader2, ShieldCheck, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 import { useFirestore } from '@/firebase';
@@ -14,12 +13,16 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [inlineSuccess, setInlineSuccess] = useState<string | null>(null);
   const firestore = useFirestore();
 
   const handleCreate = async () => {
+    setInlineError(null);
+    setInlineSuccess(null);
+
     if (!email || password.length < 6) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: 'કૃપા કરીને માન્ય ઈમેલ અને ઓછામાં ઓછો 6 અક્ષરનો પાસવર્ડ દાખલ કરો.' });
+      setInlineError('કૃપા કરીને માન્ય ઈમેલ અને ઓછામાં ઓછો 6 અક્ષરનો પાસવર્ડ દાખલ કરો.');
       return;
     }
     
@@ -36,7 +39,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(`API Error: ${data.error?.message || 'Unknown Identity Toolkit Error'}`);
+        throw new Error(data.error?.message || 'Unknown Error');
       }
       
       const newUserId = data.localId;
@@ -55,14 +58,22 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
         createdAt: new Date().toISOString()
       });
       
-      toast({ title: 'સફળતા', description: `નવું એડમિન એકાઉન્ટ (${cleanEmail}) સફળતાપૂર્વક બની ગયું છે!` });
-      onClose();
+      setInlineSuccess(`નવું એડમિન એકાઉન્ટ (${cleanEmail}) સફળતાપૂર્વક બની ગયું છે!`);
+      setTimeout(() => {
+        onClose();
+      }, 1800);
     } catch (error: any) {
       let errorMsg = error.message;
-      if (errorMsg.includes('EMAIL_EXISTS')) errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
-      if (errorMsg.includes('WEAK_PASSWORD')) errorMsg = 'પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.';
-      if (errorMsg.includes('PERMISSION_DENIED')) errorMsg = 'Firebase Rules અપડેટ નથી થયા. કૃપા કરીને Rules ચેક કરો.';
-      toast({ variant: 'destructive', title: 'એકાઉન્ટ બનાવવામાં ભૂલ', description: errorMsg });
+      if (errorMsg.includes('EMAIL_EXISTS')) {
+        errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે! કૃપા કરીને બીજો નવો ઈમેલ દાખલ કરો.';
+      } else if (errorMsg.includes('WEAK_PASSWORD')) {
+        errorMsg = 'પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.';
+      } else if (errorMsg.includes('PERMISSION_DENIED')) {
+        errorMsg = 'Firebase Rules ના લીધે એક્સેસ મંજૂર નથી થઈ રહ્યો. કૃપા કરીને ડેટાબેઝ રૂલ્સ તપાસો.';
+      } else {
+        errorMsg = `ભૂલ આવી: ${errorMsg}`;
+      }
+      setInlineError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -82,13 +93,32 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
         </div>
         
         <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="p-6 space-y-5">
+          {/* Inline Error Message */}
+          {inlineError && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold flex items-start gap-3 animate-in fade-in duration-200">
+              <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <span>{inlineError}</span>
+            </div>
+          )}
+
+          {/* Inline Success Message */}
+          {inlineSuccess && (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold flex items-start gap-3 animate-in fade-in duration-200">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <span>{inlineSuccess}</span>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">નવું એડમિન ઈમેલ</Label>
             <Input 
               type="email" 
               placeholder="admin@email.com" 
               value={email} 
-              onChange={e => setEmail(e.target.value)} 
+              onChange={e => {
+                setEmail(e.target.value);
+                if (inlineError) setInlineError(null);
+              }} 
               className="h-12 rounded-xl focus-visible:ring-[#4F46E5]"
               required
             />
@@ -100,7 +130,10 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
               type="text" 
               placeholder="ઓછામાં ઓછા 6 અક્ષર" 
               value={password} 
-              onChange={e => setPassword(e.target.value)} 
+              onChange={e => {
+                setPassword(e.target.value);
+                if (inlineError) setInlineError(null);
+              }} 
               className="h-12 rounded-xl focus-visible:ring-[#4F46E5]"
               required
             />
@@ -108,7 +141,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
           
           <Button 
             type="submit"
-            disabled={loading} 
+            disabled={loading || !!inlineSuccess} 
             className="w-full h-14 mt-4 rounded-xl font-black text-lg shadow-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white transition-all"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એડમિન એકાઉન્ટ બનાવો'}
