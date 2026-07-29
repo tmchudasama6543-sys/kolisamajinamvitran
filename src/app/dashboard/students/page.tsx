@@ -409,7 +409,18 @@ export default function StudentsListPage() {
     const worksheet = XLSX.utils.json_to_sheet(topRankers);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Top Rankers");
-    XLSX.writeFile(workbook, `Top_Rankers_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Top_Rankers_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
     toast({ title: 'સફળ!', description: 'ટોપર વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [generateRankedStudents, toast]);
 
@@ -422,7 +433,18 @@ export default function StudentsListPage() {
     const worksheet = XLSX.utils.json_to_sheet(remaining);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Remaining Students");
-    XLSX.writeFile(workbook, `Remaining_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Remaining_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
     toast({ title: 'સફળ!', description: 'બાકીના વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [generateRankedStudents, toast]);
 
@@ -436,7 +458,18 @@ export default function StudentsListPage() {
     const worksheet = XLSX.utils.json_to_sheet(allRanked);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "All Students");
-    XLSX.writeFile(workbook, `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
     toast({ title: 'સફળ!', description: 'તમામ વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [filteredStudents, generateRankedStudents, toast]);
 
