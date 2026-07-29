@@ -12,7 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, GraduationCap, Loader2, ShieldCheck, UserCircle, AlertCircle } from 'lucide-react';
-import { doc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'કૃપા કરીને માન્ય ઇમેઇલ દાખલ કરો.' }),
@@ -95,7 +96,27 @@ export default function LoginForm() {
 
     try {
       if (mode === 'signin') {
-        await initiateEmailSignIn(auth, cleanEmail, values.password);
+        const userCredential = await initiateEmailSignIn(auth, cleanEmail, values.password);
+        const signedInUser = userCredential.user;
+
+        // Strict Role-Tab Matching: Verify role in Firestore
+        const userDocRef = doc(firestore, 'users', signedInUser.uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists()) {
+          const userRole = userSnap.data()?.role || 'data_entry';
+          
+          if (role === 'admin' && userRole !== 'admin' && cleanEmail !== ADMIN_EMAIL) {
+            await signOut(auth);
+            throw new Error('આ ઓપરેટરનું એકાઉન્ટ છે! એડમિન લોગિન ટેબમાંથી ઓપરેટર લોગિન ન થઈ શકે. કૃપા કરીને સેન્ટર પેનલમાંથી લોગિન કરો.');
+          }
+
+          if (role === 'data_entry' && userRole === 'admin' && cleanEmail !== CENTER_EMAIL) {
+            await signOut(auth);
+            throw new Error('આ એડમિનનું એકાઉન્ટ છે! સેન્ટર પેનલ ટેબમાંથી એડમિન લોગિન ન થઈ શકે. કૃપા કરીને એડમિન પેનલમાંથી લોગિન કરો.');
+          }
+        }
+
         toast({ title: 'લૉગિન સફળ', description: 'તમારા ડેશબોર્ડ પર રીડાયરેક્ટ કરી રહ્યાં છીએ...' });
       } else {
         // Pre-check if email is already registered as Admin or existing user

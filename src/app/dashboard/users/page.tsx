@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,10 +47,10 @@ export default function UsersPage() {
   const handleUpdateAccess = async (userId: string, status: boolean) => {
     setIsProcessing(userId);
     try {
-      await updateDocumentNonBlocking(doc(firestore, 'users', userId), { accessApproved: status });
+      await updateDoc(doc(firestore, 'users', userId), { accessApproved: status });
       toast({ title: status ? "મંજૂરી આપી દીધી!" : "એક્સેસ રદ કર્યો!", variant: status ? "default" : "destructive" });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: e.message });
+      toast({ variant: 'destructive', title: 'ભૂલ આવી', description: e.message });
     } finally {
       setIsProcessing(null);
     }
