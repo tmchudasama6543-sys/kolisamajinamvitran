@@ -373,21 +373,21 @@ export default function StudentsListPage() {
           'મોબાઈલ નંબર (Mobile Number)': s.mobileNumber
         };
 
-        if (allRanked.length > 0 && !pushedToAll) {
-          allRanked.push(emptyRow);
+        if (!pushedToAll) {
+          if (allRanked.length > 0) allRanked.push(emptyRow);
           pushedToAll = true;
         }
         allRanked.push(row);
 
         if (currentRank <= 3) {
-          if (topRankers.length > 0 && !pushedToTop) {
-            topRankers.push(emptyRow);
+          if (!pushedToTop) {
+            if (topRankers.length > 0) topRankers.push(emptyRow);
             pushedToTop = true;
           }
           topRankers.push(row);
         } else {
-          if (remaining.length > 0 && !pushedToRemaining) {
-            remaining.push(emptyRow);
+          if (!pushedToRemaining) {
+            if (remaining.length > 0) remaining.push(emptyRow);
             pushedToRemaining = true;
           }
           remaining.push(row);
