@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useFirebase } from '@/firebase/provider';
-import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
 export type AppUser = User & { 
@@ -33,7 +32,7 @@ export function useUser(): UserHookResult {
   const [loading, setLoading] = useState<boolean>(globalAppUser ? false : globalUserLoading);
 
   useEffect(() => {
-    // If Firebase Auth is still determining the initial user state, keep loading.
+    // If Firebase Auth is still determining initial state, keep loading.
     if (isUserLoading) {
       if (!globalAppUser) {
         setLoading(true);
@@ -44,15 +43,10 @@ export function useUser(): UserHookResult {
     const firebaseUser = auth.currentUser;
 
     if (firebaseUser) {
-      if (globalAppUser && globalAppUser.uid === firebaseUser.uid) {
-        setAppUser(globalAppUser);
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
+      const emailLower = firebaseUser.email?.toLowerCase() || '';
 
       // 1. Immediate check for Super Admin by Email (Hardcoded safety)
-      if (firebaseUser.email === ADMIN_EMAIL) {
+      if (emailLower === ADMIN_EMAIL) {
         const adminUser: AppUser = { ...firebaseUser, role: 'admin', accessApproved: true };
         globalAppUser = adminUser;
         globalUserLoading = false;
@@ -62,7 +56,7 @@ export function useUser(): UserHookResult {
       }
 
       // 1.5. Immediate check for approved Center Panel user by Email
-      if (firebaseUser.email === CENTER_EMAIL) {
+      if (emailLower === CENTER_EMAIL) {
         const centerUser: AppUser = { ...firebaseUser, role: 'data_entry', accessApproved: true };
         globalAppUser = centerUser;
         globalUserLoading = false;
@@ -74,24 +68,12 @@ export function useUser(): UserHookResult {
       // 2. Setup Real-time Listener for the User's Profile Document
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       
-      const unsubscribe = onSnapshot(userDocRef, async (docSnap) => {
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         let finalUser: AppUser;
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          
-          let finalRole = userData.role || 'data_entry';
-          let finalApproval = userData.accessApproved !== undefined ? userData.accessApproved : false;
-
-          const adminDocRef = doc(firestore, 'roles_admin', firebaseUser.uid);
-          const adminDoc = await getDoc(adminDocRef);
-          
-          if (adminDoc.exists()) {
-            finalRole = 'admin';
-            // Only set finalApproval = true if accessApproved is NOT explicitly set to false (i.e. Revoked)
-            if (userData.accessApproved !== false) {
-              finalApproval = true;
-            }
-          }
+          const finalRole = userData.role || 'data_entry';
+          const finalApproval = userData.accessApproved !== undefined ? userData.accessApproved : false;
 
           finalUser = { 
             ...firebaseUser, 
@@ -99,15 +81,8 @@ export function useUser(): UserHookResult {
             accessApproved: finalApproval,
           };
         } else {
+          // If no doc exists yet in Firestore, default to data_entry and accessApproved: false
           finalUser = { ...firebaseUser, role: 'data_entry', accessApproved: false }; 
-          setDoc(userDocRef, {
-            email: firebaseUser.email || "",
-            role: 'data_entry',
-            dataEntryCenterId: null,
-            accessApproved: firebaseUser.email === CENTER_EMAIL ? true : false
-          }).catch((err) => {
-            console.error("Error creating default user profile doc:", err);
-          });
         }
 
         globalAppUser = finalUser;
