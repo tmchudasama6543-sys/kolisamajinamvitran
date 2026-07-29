@@ -182,7 +182,7 @@ export default function StudentsListPage() {
 
 
   const studentsQuery = useMemoFirebase(
-    () => (user?.role === 'admin' ? query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc'), limit(15000)) : null),
+    () => (user?.role === 'admin' ? query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc'), limit(5000)) : null),
     [user, firestore]
   );
 
