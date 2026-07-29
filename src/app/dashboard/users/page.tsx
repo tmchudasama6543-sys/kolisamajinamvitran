@@ -155,9 +155,11 @@ export default function UsersPage() {
           </h1>
           <p className="text-slate-400 font-bold mt-2 uppercase text-xs tracking-widest">એડમિન અને ઓપરેટર એકાઉન્ટ મંજૂરી તથા સિક્યોરિટી</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="h-12 px-6 rounded-2xl font-black shadow-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white hover:scale-105 transition-all text-sm gap-2">
-          <PlusCircle className="h-5 w-5" /> નવું એડમિન બનાવો
-        </Button>
+        {adminUser?.email?.toLowerCase() === 'jayhind6543@gmail.com' && (
+          <Button onClick={() => setShowCreateModal(true)} className="h-12 px-6 rounded-2xl font-black shadow-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white hover:scale-105 transition-all text-sm gap-2">
+            <PlusCircle className="h-5 w-5" /> નવું એડમિન બનાવો
+          </Button>
+        )}
       </div>
 
       {/* Section 1: Pending & Revoked Accounts */}

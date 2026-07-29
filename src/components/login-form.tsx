@@ -12,8 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, GraduationCap, Loader2, ShieldCheck, UserCircle, AlertCircle } from 'lucide-react';
-import { doc, getDoc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { doc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'કૃપા કરીને માન્ય ઇમેઇલ દાખલ કરો.' }),
@@ -96,22 +95,7 @@ export default function LoginForm() {
 
     try {
       if (mode === 'signin') {
-        const userCredential = await initiateEmailSignIn(auth, cleanEmail, values.password);
-        const signedInUser = userCredential.user;
-
-        // Strict Admin Verification: If logging in under Admin tab, verify that user is an Admin
-        if (role === 'admin' && cleanEmail !== ADMIN_EMAIL) {
-          const adminDocSnap = await getDoc(doc(firestore, 'roles_admin', signedInUser.uid));
-          const userDocSnap = await getDoc(doc(firestore, 'users', signedInUser.uid));
-          
-          const isUserAdmin = adminDocSnap.exists() || (userDocSnap.exists() && userDocSnap.data()?.role === 'admin');
-
-          if (!isUserAdmin) {
-            await signOut(auth);
-            throw new Error('આ એકાઉન્ટ એડમિન નથી! આ ઓપરેટરનું એકાઉન્ટ છે. કૃપા કરીને સેન્ટર પેનલમાંથી લોગિન કરો.');
-          }
-        }
-
+        await initiateEmailSignIn(auth, cleanEmail, values.password);
         toast({ title: 'લૉગિન સફળ', description: 'તમારા ડેશબોર્ડ પર રીડાયરેક્ટ કરી રહ્યાં છીએ...' });
       } else {
         // Pre-check if email is already registered as Admin or existing user
