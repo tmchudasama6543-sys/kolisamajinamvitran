@@ -33,7 +33,6 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
 
 import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 type StudentData = {
@@ -73,9 +72,16 @@ const exportExcelFile = async (workbook: any, filename: string) => {
       }
     }
     
-    // Fallback to file-saver (Best for Desktop / Android Chrome)
+    // Fallback for Desktop
     const blob = new Blob([wbout], { type: mimeType });
-    saveAs(blob, filename);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   } catch (err) {
     console.error("Export error:", err);
   }
