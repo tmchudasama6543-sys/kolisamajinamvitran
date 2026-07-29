@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import LoginForm from '@/components/login-form';
@@ -13,23 +13,34 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
+  const signingOutRef = useRef(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      // If user is revoked, sign them out immediately and show notification
-      if (user.email !== 'jayhind6543@gmail.com' && user.accessApproved === false) {
-        signOut(auth).then(() => {
-          toast({
-            variant: 'destructive',
-            title: 'એક્સેસ બંધ છે!',
-            description: 'તમારું એકાઉન્ટ રદ (Revoke) કરવામાં આવ્યું છે. કૃપા કરીને મુખ્ય એડમિનનો સંપર્ક કરો.',
+    if (loading) return;
+
+    if (user) {
+      const isMaster = user.email?.toLowerCase() === 'jayhind6543@gmail.com';
+      const isRevoked = !isMaster && user.accessApproved === false;
+
+      if (isRevoked) {
+        if (!signingOutRef.current) {
+          signingOutRef.current = true;
+          signOut(auth).then(() => {
+            toast({
+              variant: 'destructive',
+              title: 'એક્સેસ બંધ છે!',
+              description: 'તમારું એકાઉન્ટ રદ (Revoke) કરવામાં આવ્યું છે. કૃપા કરીને મુખ્ય એડમિનનો સંપર્ક કરો.',
+            });
+            signingOutRef.current = false;
+          }).catch(() => {
+            signingOutRef.current = false;
           });
-        });
+        }
       } else {
         router.replace('/dashboard');
       }
     }
-  }, [user, loading, router, auth, toast]);
+  }, [user, loading, router, auth]);
 
   if (loading) {
     return (
@@ -39,11 +50,11 @@ export default function LoginPage() {
     );
   }
 
-  // If user is revoked or not logged in, show the login form
-  if (!user || user.accessApproved === false) {
+  // If no user or revoked, show LoginForm
+  if (!user || (user.email?.toLowerCase() !== 'jayhind6543@gmail.com' && user.accessApproved === false)) {
     return <LoginForm />;
   }
-  
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />

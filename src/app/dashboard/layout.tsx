@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { Loader2, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 export default function DashboardLayout({
@@ -17,27 +16,31 @@ export default function DashboardLayout({
   const { user, loading } = useUser();
   const router = useRouter();
   const auth = useAuth();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      router.replace('/');
-    } catch (error) {
-      console.error("Sign out error:", error);
-    }
-  };
+  const redirectingRef = useRef(false);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
+    if (loading) return;
+
+    if (!user) {
+      if (!redirectingRef.current) {
+        redirectingRef.current = true;
         router.replace('/');
-      } else if (user.email !== 'jayhind6543@gmail.com' && user.accessApproved === false) {
+      }
+      return;
+    }
+
+    const isMaster = user.email?.toLowerCase() === 'jayhind6543@gmail.com';
+    const isRevoked = !isMaster && user.accessApproved === false;
+
+    if (isRevoked) {
+      if (!redirectingRef.current) {
+        redirectingRef.current = true;
         signOut(auth).then(() => {
           router.replace('/');
         });
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, auth]);
 
   if (loading || !user) {
     return (
@@ -81,5 +84,3 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
-
-    
