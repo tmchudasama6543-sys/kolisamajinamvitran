@@ -86,8 +86,8 @@ export default function StudentsListPage() {
     standard: '',
     villageName: '',
     mobileNumber: '',
-    obtainedMarks: 0,
-    totalMarks: 0
+    obtainedMarks: '' as number | string,
+    totalMarks: '' as number | string
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
@@ -125,8 +125,8 @@ export default function StudentsListPage() {
       standard: '',
       villageName: '',
       mobileNumber: '',
-      obtainedMarks: 0,
-      totalMarks: 0
+      obtainedMarks: '',
+      totalMarks: ''
     });
     setIsAddingNew(true);
     window.location.hash = 'new';
@@ -259,8 +259,10 @@ export default function StudentsListPage() {
     }
     setIsSaving(true);
     try {
-      const percentage = newStudent.totalMarks > 0 ? parseFloat(((newStudent.obtainedMarks / newStudent.totalMarks) * 100).toFixed(2)) : 0;
-      const textData = newStudent;
+      const parsedTotal = Number(newStudent.totalMarks);
+      const parsedObtained = Number(newStudent.obtainedMarks);
+      const percentage = parsedTotal > 0 ? parseFloat(((parsedObtained / parsedTotal) * 100).toFixed(2)) : 0;
+      const textData = { ...newStudent, obtainedMarks: parsedObtained, totalMarks: parsedTotal };
       
       const studentData = {
         ...textData,
@@ -291,8 +293,10 @@ export default function StudentsListPage() {
     }
     setIsUpdating(true);
     try {
-      const updatedPercentage = parseFloat(((editingStudent.obtainedMarks / editingStudent.totalMarks) * 100).toFixed(2));
-      const studentTextData = editingStudent;
+      const parsedTotal = Number(editingStudent.totalMarks);
+      const parsedObtained = Number(editingStudent.obtainedMarks);
+      const updatedPercentage = parsedTotal > 0 ? parseFloat(((parsedObtained / parsedTotal) * 100).toFixed(2)) : 0;
+      const studentTextData = { ...editingStudent, obtainedMarks: parsedObtained, totalMarks: parsedTotal };
       const studentData = { ...studentTextData, percentage: updatedPercentage };
       updateStudentNonBlocking(firestore, editingStudent.id, studentData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડેટાબેઝ અપડેટ નિષ્ફળ: ' + err.message });
@@ -445,16 +449,16 @@ export default function StudentsListPage() {
             </div>
             <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">✅ મેળવેલ ગુણ</label>
-               <Input type="number" value={newStudent.obtainedMarks || ''} onChange={e => setNewStudent(prev => ({...prev, obtainedMarks: Number(e.target.value)}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={newStudent.obtainedMarks} onChange={e => setNewStudent(prev => ({...prev, obtainedMarks: e.target.value}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">📊 કુલ ગુણ</label>
-               <Input type="number" value={newStudent.totalMarks || ''} onChange={e => setNewStudent(prev => ({...prev, totalMarks: Number(e.target.value)}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={newStudent.totalMarks} onChange={e => setNewStudent(prev => ({...prev, totalMarks: e.target.value}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-3 pt-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">% ટકાવારી</label>
                <div className="bg-emerald-500 text-white font-black px-6 py-4 rounded-2xl text-center text-2xl sm:text-3xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
-                {newStudent.totalMarks > 0 ? ((newStudent.obtainedMarks / newStudent.totalMarks) * 100).toFixed(2) : '0.00'}%
+                {Number(newStudent.totalMarks) > 0 ? ((Number(newStudent.obtainedMarks) / Number(newStudent.totalMarks)) * 100).toFixed(2) : '0.00'}%
                </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 pt-10">
@@ -502,16 +506,16 @@ export default function StudentsListPage() {
             </div>
             <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">✅ મેળવેલ ગુણ</label>
-               <Input type="number" value={editingStudent.obtainedMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, obtainedMarks: Number(e.target.value)} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={editingStudent.obtainedMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, obtainedMarks: e.target.value as any} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">📊 કુલ ગુણ</label>
-               <Input type="number" value={editingStudent.totalMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, totalMarks: Number(e.target.value)} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={editingStudent.totalMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, totalMarks: e.target.value as any} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-3 pt-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">% ટકાવારી</label>
                <div className="bg-emerald-500 text-white font-black px-6 py-4 rounded-2xl text-center text-2xl sm:text-3xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
-                {editingStudent.totalMarks > 0 ? ((editingStudent.obtainedMarks / editingStudent.totalMarks) * 100).toFixed(2) : '0.00'}%
+                {Number(editingStudent.totalMarks) > 0 ? ((Number(editingStudent.obtainedMarks) / Number(editingStudent.totalMarks)) * 100).toFixed(2) : '0.00'}%
                </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 pt-10">
