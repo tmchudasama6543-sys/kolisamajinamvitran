@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Users, Trash2, MapPin, Edit3, Save, Loader2, X, Phone, Copy, FileDown, CheckSquare, AlertTriangle, RefreshCw, Download, ArrowLeft } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback, useRef, useId } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useId, useDeferredValue } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -176,24 +176,25 @@ export default function StudentsListPage() {
 
 
   const studentsQuery = useMemoFirebase(
-    () => (user?.role === 'admin' ? query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc'), limit(5000)) : null),
+    () => (user?.role === 'admin' ? query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc'), limit(15000)) : null),
     [user, firestore]
   );
 
   const { data: students, isLoading } = useCollection<StudentData>(studentsQuery);
+  const deferredStudents = useDeferredValue(students);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
   const filteredStudents = useMemo(() => {
-    if (!students) return [];
+    if (!deferredStudents) return [];
     return students.filter(s => {
       const matchesSearch = (s.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) || (s.mobileNumber || '').includes(debouncedSearch);
       const matchesVillage = villageFilter === 'all' || s.villageName === villageFilter;
       const matchesStandard = standardFilter === 'all' || s.standard === standardFilter;
       return matchesSearch && matchesVillage && matchesStandard;
     });
-  }, [students, debouncedSearch, villageFilter, standardFilter]);
+  }, [deferredStudents, debouncedSearch, villageFilter, standardFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -604,27 +605,19 @@ export default function StudentsListPage() {
             <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary shrink-0" /> ઈનામ મળવા પાત્ર વિદ્યાર્થીઓનું લિસ્ટ
           </h1>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-
-             <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button className="h-12 px-6 text-base font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
-                   <FileDown className="h-5 w-5" /> એક્સેલ ડાઉનલોડ ({filteredStudents.length})
-                 </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent className="w-64 font-black rounded-xl p-2 z-[200]">
-                 <DropdownMenuItem onSelect={handleDownloadTopRankers} className="h-12 text-sm cursor-pointer rounded-lg hover:bg-indigo-50">
-                   🏆 ટોપર વિદ્યાર્થીઓ (Rank 1 થી 3)
-                 </DropdownMenuItem>
-                 <DropdownMenuItem onSelect={handleDownloadRemaining} className="h-12 text-sm cursor-pointer rounded-lg hover:bg-indigo-50">
-                   👥 બાકીના વિદ્યાર્થીઓ (અન્ય)
-                 </DropdownMenuItem>
-                 <DropdownMenuItem onSelect={handleExportToExcel} className="h-12 text-sm cursor-pointer rounded-lg hover:bg-indigo-50">
-                   📋 તમામ વિદ્યાર્થીઓ (All)
-                 </DropdownMenuItem>
-               </DropdownMenuContent>
-             </DropdownMenu>
-             <Button onClick={openNew} className="h-12 px-6 text-base font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><Users className="h-5 w-5" /> નવી એન્ટ્રી ઉમેરો</Button>
+          <div className="flex flex-wrap items-center gap-3">
+             <Button onClick={handleDownloadTopRankers} className="h-12 px-4 sm:px-5 text-sm font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-md flex items-center gap-2 transition-all">
+               🏆 ટોપર (૧ થી ૩)
+             </Button>
+             <Button onClick={handleDownloadRemaining} className="h-12 px-4 sm:px-5 text-sm font-black rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-md flex items-center gap-2 transition-all">
+               👥 અન્ય
+             </Button>
+             <Button onClick={handleExportToExcel} className="h-12 px-4 sm:px-5 text-sm font-black rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md flex items-center gap-2 transition-all">
+               <FileDown className="h-4 w-4" /> તમામ એક્સેલ ({filteredStudents.length})
+             </Button>
+             <Button onClick={openNew} className="h-12 px-6 text-sm sm:text-base font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center gap-2 transition-all">
+               <Users className="h-5 w-5" /> નવી એન્ટ્રી
+             </Button>
           </div>
       </div>
 
