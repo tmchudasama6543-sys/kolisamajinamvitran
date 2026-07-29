@@ -594,7 +594,7 @@ export default function StudentsListPage() {
 
   if (isAddingNew) {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-12 max-w-4xl mx-auto space-y-12 pb-32">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-10 max-w-4xl mx-auto space-y-8 pb-64">
         <div className="pb-10 border-b-8 border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={closeNew} className="h-12 w-12 rounded-full border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 shadow-md flex items-center justify-center shrink-0 transition-all"><ArrowLeft className="h-6 w-6 text-slate-700" /></Button>
@@ -692,7 +692,7 @@ export default function StudentsListPage() {
 
   if (editingStudent) {
     return (
-      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="p-4 sm:p-12 max-w-4xl mx-auto space-y-12 pb-32">
+      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="p-4 sm:p-10 max-w-4xl mx-auto space-y-8 pb-64">
         <div className="pb-10 border-b-8 border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={closeEdit} className="h-12 w-12 rounded-full border-2 border-slate-200 hover:border-primary hover:bg-primary/5 shadow-md flex items-center justify-center shrink-0 transition-all"><ArrowLeft className="h-6 w-6 text-slate-700" /></Button>
@@ -812,7 +812,7 @@ export default function StudentsListPage() {
   }
 
   return (
-    <div className="p-4 sm:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-10 pb-32 overflow-x-hidden w-full max-w-full px-2 sm:px-4">
+    <div className="p-4 sm:p-10 max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-32 overflow-x-hidden w-full max-w-full px-2 sm:px-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-8 border-b-4 border-slate-100">
         <div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-primary tracking-tighter flex items-center gap-3 py-2 leading-tight">
@@ -820,30 +820,30 @@ export default function StudentsListPage() {
           </h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
-             <Button onClick={handleFixDatabase} disabled={isFixingDb} className="h-14 px-8 text-lg font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
-               {isFixingDb ? <Loader2 className="h-6 w-6 animate-spin" /> : "🛠️"} ક્લીનઅપ
+             <Button onClick={handleFixDatabase} disabled={isFixingDb} className="h-12 px-6 text-base font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200">
+               {isFixingDb ? <Loader2 className="h-5 w-5 animate-spin" /> : "🛠️"} ક્લીનઅપ
              </Button>
-             <Button onClick={handleExportToExcel} className="h-14 px-8 text-lg font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><FileDown className="h-6 w-6" /> એક્સેલ ડાઉનલોડ ({filteredStudents.length})</Button>
-             <Button onClick={openNew} className="h-14 px-8 text-lg font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><Users className="h-6 w-6" /> નવી એન્ટ્રી ઉમેરો</Button>
+             <Button onClick={handleExportToExcel} className="h-12 px-6 text-base font-black rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><FileDown className="h-5 w-5" /> એક્સેલ ડાઉનલોડ ({filteredStudents.length})</Button>
+             <Button onClick={openNew} className="h-12 px-6 text-base font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center gap-2 transition-all duration-200"><Users className="h-5 w-5" /> નવી એન્ટ્રી ઉમેરો</Button>
           </div>
       </div>
 
-      <Card className="rounded-[1.5rem] sm:rounded-[2.5rem] border-none shadow-xl bg-slate-50 p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+      <Card className="rounded-[1.5rem] sm:rounded-[2.5rem] border-none shadow-xl bg-slate-50 p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div className="space-y-2">
           <label className="text-xs font-black uppercase text-slate-900 tracking-widest px-1">સર્ચ</label>
-          <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" /><Input placeholder="નામ કે મોબાઈલ..." className="h-14 pl-12 rounded-xl border-2 font-black bg-white text-slate-900 border-slate-200 text-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" /><Input placeholder="નામ કે મોબાઈલ..." className="h-12 pl-10 rounded-xl border-2 font-black bg-white text-slate-900 border-slate-200 text-base" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
         </div>
         <div className="space-y-2">
           <label className="text-xs font-black uppercase text-slate-900 tracking-widest px-1">ગામ</label>
           <Select onValueChange={setVillageFilter} defaultValue="all">
-            <SelectTrigger className="h-14 rounded-xl border-2 font-black bg-white text-slate-900 border-slate-200 text-lg"><SelectValue placeholder="તમામ ગામ" /></SelectTrigger>
+            <SelectTrigger className="h-12 rounded-xl border-2 font-black bg-white text-slate-900 border-slate-200 text-base"><SelectValue placeholder="તમામ ગામ" /></SelectTrigger>
             <SelectContent className="max-h-80 z-[100]"><SelectItem value="all">તમામ ગામ</SelectItem>{palitanaVillages.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <label className="text-xs font-black uppercase text-slate-900 tracking-widest px-1">ધોરણ</label>
           <Select onValueChange={setStandardFilter} defaultValue="all">
-            <SelectTrigger className="h-14 rounded-xl border-2 font-black bg-white text-slate-900 border-slate-200 text-lg"><SelectValue placeholder="તમામ ધોરણ" /></SelectTrigger>
+            <SelectTrigger className="h-12 rounded-xl border-2 font-black bg-white text-slate-900 border-slate-200 text-base"><SelectValue placeholder="તમામ ધોરણ" /></SelectTrigger>
             <SelectContent className="max-h-80 z-[100]"><SelectItem value="all">તમામ ધોરણ</SelectItem>{academicStandards.map(std => <SelectItem key={std} value={std}>{std}</SelectItem>)}</SelectContent>
           </Select>
         </div>
