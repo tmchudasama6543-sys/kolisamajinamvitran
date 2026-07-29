@@ -78,10 +78,31 @@ export default function CenterPanel() {
   }, []);
 
   const triggerCamera = useCallback(async (field: 'marksheet' | 'aadhar') => {
-    document.getElementById(`${uid}-${field}-cam`)?.click();
-  }, [uid]);
+    if (typeof window !== 'undefined' && (window as any).AppInventor) {
+      setCompressing(p => ({ ...p, [field]: true }));
+      try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast({ variant: 'destructive', title: 'Camera ઉપલબ્ધ નથી', description: 'આ device પર camera support નથી.' });
+      return;
+    }
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasCamera = devices.some(d => d.kind === 'videoinput');
+      if (!hasCamera) {
+        toast({ variant: 'destructive', title: 'Camera મળ્યો નહીં', description: 'Device સાથે camera જોડાયેલ નથી.' });
+        return;
+      }
+    } catch (_) {
+    }
+    setCameraTarget(field);
+  }, [toast]);
 
   const triggerGallery = useCallback((field: 'marksheet' | 'aadhar') => {
+    if (typeof window !== 'undefined' && (window as any).AppInventor) {
+      try { (window as any).AppInventor.setWebViewString(`gallery_${field}`); } catch (_) {}
+    }
     document.getElementById(`${uid}-${field}-gal`)?.click();
   }, [uid]);
 
@@ -302,7 +323,6 @@ export default function CenterPanel() {
                      </div>
                    )}
                    <input id={`${uid}-marksheet-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleFile(ev, 'marksheet')} />
-                   <input id={`${uid}-marksheet-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleFile(ev, 'marksheet')} />
                 </div>
               </div>
 
@@ -340,7 +360,6 @@ export default function CenterPanel() {
                      </div>
                    )}
                    <input id={`${uid}-aadhar-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleFile(ev, 'aadhar')} />
-                   <input id={`${uid}-aadhar-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleFile(ev, 'aadhar')} />
                 </div>
               </div>
 
