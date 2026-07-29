@@ -52,32 +52,32 @@ export function SearchableSelect({
         type="button"
         onClick={() => setOpen(!open)}
         className={cn(
-          "w-full h-14 rounded-2xl border-2 font-black text-slate-900 bg-white hover:bg-slate-50 px-6 border-slate-200 text-lg sm:text-xl flex items-center justify-between transition-all outline-none focus:border-primary",
+          "w-full h-12 rounded-2xl border-2 font-black text-slate-900 bg-white hover:bg-slate-50 px-5 border-slate-200 text-base sm:text-lg flex items-center justify-between transition-all outline-none focus:border-primary",
           className
         )}
       >
         <span className="truncate">{value || placeholder}</span>
-        <ChevronsUpDown className="ml-2 h-6 w-6 shrink-0 opacity-50 text-slate-400" />
+        <ChevronsUpDown className="ml-2 h-5 w-5 shrink-0 opacity-50 text-slate-400" />
       </button>
 
       {open && (
         <div className="absolute left-0 right-0 mt-2 p-0 rounded-2xl shadow-2xl border-2 border-slate-100 bg-white overflow-hidden z-[150] animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="p-4 border-b bg-slate-50">
+          <div className="p-3 border-b bg-slate-50">
              <div className="relative">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-slate-400" />
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                <Input 
                  placeholder={`${label} શોધો...`} 
                  value={search}
                  onChange={(e) => setSearch(e.target.value)}
-                 className="h-14 pl-12 rounded-xl border-2 bg-white font-black text-slate-900 text-lg"
+                 className="h-12 pl-10 rounded-xl border-2 bg-white font-black text-slate-900 text-base"
                  autoFocus
                />
              </div>
           </div>
-          <ScrollArea className="h-80">
-            <div className="p-2">
+          <ScrollArea className="h-64">
+            <div className="p-1.5">
               {filtered.length === 0 && (
-                <p className="p-6 text-center text-base font-black text-slate-400 italic">કોઈ વિકલ્પ મળ્યો નથી.</p>
+                <p className="p-4 text-center text-sm font-black text-slate-400 italic">કોઈ વિકલ્પ મળ્યો નથી.</p>
               )}
               {filtered.map((opt) => (
                 <button
@@ -89,12 +89,12 @@ export function SearchableSelect({
                     setSearch("");
                   }}
                   className={cn(
-                    "w-full text-left px-6 py-4 rounded-xl text-lg font-black transition-all flex items-center justify-between",
+                    "w-full text-left px-4 py-3 rounded-xl text-base font-black transition-all flex items-center justify-between",
                     value === opt ? "bg-primary/10 text-primary" : "hover:bg-slate-50 text-slate-900"
                   )}
                 >
                   {opt}
-                  {value === opt && <Check className="h-6 w-6" />}
+                  {value === opt && <Check className="h-5 w-5" />}
                 </button>
               ))}
             </div>

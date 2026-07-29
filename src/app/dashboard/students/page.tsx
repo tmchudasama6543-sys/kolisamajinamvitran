@@ -605,8 +605,8 @@ export default function StudentsListPage() {
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto p-4 sm:p-12 space-y-10 sm:space-y-14 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
-          <div className="space-y-8 sm:space-y-10">
+        <div className="max-w-2xl mx-auto p-4 sm:p-10 space-y-6 sm:space-y-8 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
+          <div className="space-y-6 sm:space-y-8">
              {(['marksheetPhotoBase64', 'aadhaarPhotoBase64'] as const).map(f => {
                const fKey = f === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
                const label = f === 'marksheetPhotoBase64' ? '📄 માર્કશીટ ફોટો' : '🪪 આધાર કાર્ડ ફોટો';
@@ -648,10 +648,10 @@ export default function StudentsListPage() {
              })}
           </div>
 
-          <div className="space-y-8 pt-4">
+          <div className="space-y-5 pt-2">
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ</label>
-               <Input placeholder="નામ લખો..." value={newStudent.name} onChange={e => setNewStudent(prev => ({...prev, name: e.target.value}))} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30" />
+               <Input placeholder="નામ લખો..." value={newStudent.name} onChange={e => setNewStudent(prev => ({...prev, name: e.target.value}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">🎓 ધોરણ</label>
@@ -663,19 +663,19 @@ export default function StudentsListPage() {
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-emerald-600 tracking-widest px-1">📱 મોબાઈલ નંબર</label>
-               <Input placeholder="૧૦ આંકડાનો નંબર" value={newStudent.mobileNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setNewStudent(prev => ({...prev, mobileNumber: val})); }} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
+               <Input placeholder="૧૦ આંકડાનો નંબર" value={newStudent.mobileNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setNewStudent(prev => ({...prev, mobileNumber: val})); }} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">✅ મેળવેલ ગુણ</label>
-               <Input type="number" value={newStudent.obtainedMarks || ''} onChange={e => setNewStudent(prev => ({...prev, obtainedMarks: Number(e.target.value)}))} className="h-16 font-black text-xl sm:text-2xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={newStudent.obtainedMarks || ''} onChange={e => setNewStudent(prev => ({...prev, obtainedMarks: Number(e.target.value)}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">📊 કુલ ગુણ</label>
-               <Input type="number" value={newStudent.totalMarks || ''} onChange={e => setNewStudent(prev => ({...prev, totalMarks: Number(e.target.value)}))} className="h-16 font-black text-xl sm:text-2xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={newStudent.totalMarks || ''} onChange={e => setNewStudent(prev => ({...prev, totalMarks: Number(e.target.value)}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-3 pt-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">% ટકાવારી</label>
-               <div className="bg-emerald-500 text-white font-black px-6 py-6 rounded-2xl text-center text-3xl sm:text-4xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
+               <div className="bg-emerald-500 text-white font-black px-6 py-4 rounded-2xl text-center text-2xl sm:text-3xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
                 {newStudent.totalMarks > 0 ? ((newStudent.obtainedMarks / newStudent.totalMarks) * 100).toFixed(2) : '0.00'}%
                </div>
             </div>
@@ -703,8 +703,8 @@ export default function StudentsListPage() {
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto p-4 sm:p-12 space-y-10 sm:space-y-14 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
-          <div className="space-y-8 sm:space-y-10">
+        <div className="max-w-2xl mx-auto p-4 sm:p-10 space-y-6 sm:space-y-8 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
+          <div className="space-y-6 sm:space-y-8">
              {(['marksheetPhotoBase64', 'aadhaarPhotoBase64'] as const).map(f => {
                const fKey = f === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
                const label = f === 'marksheetPhotoBase64' ? '📄 માર્કશીટ ફોટો' : '🪪 આધાર કાર્ડ ફોટો';
@@ -746,10 +746,10 @@ export default function StudentsListPage() {
              })}
           </div>
 
-          <div className="space-y-8 pt-4">
+          <div className="space-y-5 pt-2">
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ</label>
-               <Input value={editingStudent.name} onChange={e => setEditingStudent(prev => prev ? {...prev, name: e.target.value} : null)} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30" />
+               <Input value={editingStudent.name} onChange={e => setEditingStudent(prev => prev ? {...prev, name: e.target.value} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">🎓 ધોરણ</label>
@@ -761,19 +761,19 @@ export default function StudentsListPage() {
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-emerald-600 tracking-widest px-1">📱 મોબાઈલ નંબર</label>
-               <Input value={editingStudent.mobileNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setEditingStudent(prev => prev ? {...prev, mobileNumber: val} : null); }} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
+               <Input value={editingStudent.mobileNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setEditingStudent(prev => prev ? {...prev, mobileNumber: val} : null); }} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">✅ મેળવેલ ગુણ</label>
-               <Input type="number" value={editingStudent.obtainedMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, obtainedMarks: Number(e.target.value)} : null)} className="h-16 font-black text-xl sm:text-2xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={editingStudent.obtainedMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, obtainedMarks: Number(e.target.value)} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">📊 કુલ ગુણ</label>
-               <Input type="number" value={editingStudent.totalMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, totalMarks: Number(e.target.value)} : null)} className="h-16 font-black text-xl sm:text-2xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
+               <Input type="number" value={editingStudent.totalMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, totalMarks: Number(e.target.value)} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
             <div className="space-y-3 pt-2">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">% ટકાવારી</label>
-               <div className="bg-emerald-500 text-white font-black px-6 py-6 rounded-2xl text-center text-3xl sm:text-4xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
+               <div className="bg-emerald-500 text-white font-black px-6 py-4 rounded-2xl text-center text-2xl sm:text-3xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
                 {editingStudent.totalMarks > 0 ? ((editingStudent.obtainedMarks / editingStudent.totalMarks) * 100).toFixed(2) : '0.00'}%
                </div>
             </div>
