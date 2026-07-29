@@ -80,9 +80,9 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 z-[1001] flex flex-col">
+      <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 z-50 flex flex-col">
         <div className="flex items-center justify-between p-6 pb-4 border-b">
           <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-[#4F46E5]" /> નવું એડમિન એકાઉન્ટ બનાવો
