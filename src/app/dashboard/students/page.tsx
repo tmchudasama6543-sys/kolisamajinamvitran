@@ -31,7 +31,7 @@ import { academicStandards } from '@/lib/standards';
 
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
-import { CameraModal } from '@/components/CameraModal';
+
 import * as XLSX from 'xlsx';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
@@ -44,8 +44,7 @@ type StudentData = {
   mobileNumber: string;
   totalMarks: number;
   obtainedMarks: number;
-  marksheetPhotoBase64?: string;
-  aadhaarPhotoBase64?: string;
+
   submissionDateTime: any;
 };
 
@@ -88,9 +87,7 @@ export default function StudentsListPage() {
     villageName: '',
     mobileNumber: '',
     obtainedMarks: 0,
-    totalMarks: 0,
-    marksheetPhotoBase64: '',
-    aadhaarPhotoBase64: ''
+    totalMarks: 0
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
@@ -101,22 +98,7 @@ export default function StudentsListPage() {
 
   const uid = useId();
 
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const touchStartDist = useRef<number>(0);
-  const [photoLoading, setPhotoLoading] = useState<{ marksheetPhotoBase64: boolean; aadhaarPhotoBase64: boolean }>({ marksheetPhotoBase64: false, aadhaarPhotoBase64: false });
-  const [isFetchingPhotos, setIsFetchingPhotos] = useState<string | null>(null);
 
-  const [viewPhotosModal, setViewPhotosModal] = useState<{
-    isOpen: boolean;
-    studentName: string;
-    marksheet: string | null;
-    aadhar: string | null;
-  }>({ isOpen: false, studentName: '', marksheet: null, aadhar: null });
-  const [isFetchingPhotosForView, setIsFetchingPhotosForView] = useState<string | null>(null);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -144,9 +126,7 @@ export default function StudentsListPage() {
       villageName: '',
       mobileNumber: '',
       obtainedMarks: 0,
-      totalMarks: 0,
-      marksheetPhotoBase64: '',
-      aadhaarPhotoBase64: ''
+      totalMarks: 0
     });
     setIsAddingNew(true);
     window.location.hash = 'new';
@@ -157,140 +137,7 @@ export default function StudentsListPage() {
     if (window.location.hash.includes('new')) window.history.back();
   };
 
-  const openPreview = (imgSrc: string) => {
-    setPreviewImage(imgSrc);
-    window.location.hash = window.location.hash.includes('edit') ? 'edit&preview' : 'preview';
-  };
 
-  const closePreview = () => {
-    setPreviewImage(null);
-    setZoomLevel(1);
-    setPosition({ x: 0, y: 0 });
-    if (window.location.hash.includes('preview')) {
-      window.history.back();
-    }
-  };
-
-  const closeEdit = () => {
-    setEditingStudent(null);
-    if (window.location.hash.includes('edit')) window.history.back();
-  };
-
-  const ensureBase64Prefix = (data: string) => {
-    if (!data) return data;
-    const cleanData = data.replace(/[\r\n\s]+/g, '');
-    if (cleanData.startsWith('data:')) return cleanData;
-    return `data:image/jpeg;base64,${cleanData}`;
-  };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const callback = (field: 'marksheet' | 'aadhar', base64Data: string) => {
-        if (!base64Data) return;
-        const fKey = field === 'marksheet' ? 'marksheetPhotoBase64' : 'aadhaarPhotoBase64';
-        const processedData = ensureBase64Prefix(base64Data);
-        setPhotoLoading(prev => ({ ...prev, [fKey]: true }));
-        
-        // Yield the main thread so React can render the loading spinner before heavy compression
-        setTimeout(() => {
-          compressDataUrl(processedData, { quality: 0.4, maxWidth: 800 })
-            .then(compressed => {
-              setEditingStudent(prev => {
-                if (prev) return { ...prev, [fKey]: compressed };
-                setNewStudent(p => ({ ...p, [fKey]: compressed }));
-                return prev;
-              });
-            })
-            .catch(() => {
-              setEditingStudent(prev => {
-                if (prev) return { ...prev, [fKey]: processedData };
-                setNewStudent(p => ({ ...p, [fKey]: processedData }));
-                return prev;
-              });
-            })
-            .finally(() => {
-              setPhotoLoading(prev => ({ ...prev, [fKey]: false }));
-            });
-        }, 100);
-      };
-      (window as any).handleNativeEditImage = callback;
-      (window as any).handleNativeImage = callback;
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        delete (window as any).handleNativeEditImage;
-        delete (window as any).handleNativeImage;
-      }
-    };
-  }, []);
-
-  const triggerEditCamera = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
-    const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      setPhotoLoading(prev => ({ ...prev, [field]: true }));
-      try { (window as any).AppInventor.setWebViewString(`camera_${fKey}`); } catch (_) {}
-      return; 
-    }
-    const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
-    document.getElementById(`${uid}-${prefix}-${fKey}-cam`)?.click();
-  };
-
-  const triggerEditGallery = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
-    const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`gallery_${fKey}`); } catch (_) {}
-    }
-    const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
-    document.getElementById(`${uid}-${prefix}-${fKey}-gal`)?.click();
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setPosition({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
-  };
-
-  const handleMouseUp = () => setIsDragging(false);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      setIsDragging(true);
-      const touch = e.touches[0];
-      dragStart.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
-    } else if (e.touches.length === 2) {
-      setIsDragging(false);
-      touchStartDist.current = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 1 && isDragging) {
-      const touch = e.touches[0];
-      setPosition({ x: touch.clientX - dragStart.current.x, y: touch.clientY - dragStart.current.y });
-    } else if (e.touches.length === 2 && touchStartDist.current) {
-      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      setZoomLevel(prev => Math.min(Math.max(prev * (dist / touchStartDist.current), 1), 5));
-      touchStartDist.current = dist;
-    }
-  };
-
-  const handleTouchEnd = () => { setIsDragging(false); touchStartDist.current = 0; };
-
-  const handleDownload = useCallback(() => {
-    if (!previewImage) return;
-    const link = document.createElement('a');
-    link.href = previewImage;
-    link.download = `koli_samaj_document_${Date.now()}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast({ title: 'ડાઉનલોડ શરૂ થયું!', description: 'ફોટો તમારા ડિવાઇસમાં સેવ થઈ રહ્યો છે.' });
-  }, [previewImage, toast]);
 
   const studentsQuery = useMemoFirebase(
     () => (user?.role === 'admin' ? query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc'), limit(5000)) : null),
@@ -391,58 +238,9 @@ export default function StudentsListPage() {
     }
   };
 
-  const handleEditClick = async (student: StudentData) => {
+  const handleEditClick = (student: StudentData) => {
     window.location.hash = 'edit';
-    if (student.marksheetPhotoBase64 || student.aadhaarPhotoBase64) {
-      setEditingStudent(student);
-      return;
-    }
-    setEditingStudent({ ...student, marksheetPhotoBase64: '', aadhaarPhotoBase64: '' });
-    setIsFetchingPhotos(student.id);
-    try {
-      const photosSnap = await getDoc(doc(firestore, 'student_photos', student.id));
-      if (photosSnap.exists()) {
-        const photoData = photosSnap.data();
-        setEditingStudent(prev => prev && prev.id === student.id ? {
-          ...prev,
-          marksheetPhotoBase64: photoData.marksheetPhotoBase64 || "",
-          aadhaarPhotoBase64: photoData.aadhaarPhotoBase64 || ""
-        } : prev);
-      }
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: 'દસ્તાવેજો લોડ કરવામાં સમસ્યા.' });
-    } finally { setIsFetchingPhotos(null); }
-  };
-
-  const handleViewPhotosClick = async (student: StudentData) => {
-    setIsFetchingPhotosForView(student.id);
-    try {
-      const photosSnap = await getDoc(doc(firestore, 'student_photos', student.id));
-      if (photosSnap.exists()) {
-        const photoData = photosSnap.data();
-        if (!photoData.marksheetPhotoBase64 && !photoData.aadhaarPhotoBase64) {
-           toast({ title: 'ફોટો નથી', description: 'આ વિદ્યાર્થીનો કોઈ ફોટો અપલોડ થયેલ નથી.' });
-        } else {
-           const ensureBase64Prefix = (data: string) => {
-             if (!data) return data;
-             const cleanData = data.replace(/[\r\n\s]+/g, '');
-             return cleanData.startsWith('data:') ? cleanData : `data:image/jpeg;base64,${cleanData}`;
-           };
-           setViewPhotosModal({
-             isOpen: true,
-             studentName: student.name,
-             marksheet: photoData.marksheetPhotoBase64 ? ensureBase64Prefix(photoData.marksheetPhotoBase64) : null,
-             aadhar: photoData.aadhaarPhotoBase64 ? ensureBase64Prefix(photoData.aadhaarPhotoBase64) : null
-           });
-        }
-      } else {
-        toast({ title: 'ફોટો નથી', description: 'આ વિદ્યાર્થીનો કોઈ ફોટો અપલોડ થયેલ નથી.' });
-      }
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: 'ફોટો લોડ કરવામાં સમસ્યા આવી.' });
-    } finally {
-      setIsFetchingPhotosForView(null);
-    }
+    setEditingStudent(student);
   };
 
   const handleSaveNew = async () => {
@@ -465,15 +263,9 @@ export default function StudentsListPage() {
         enteredByUserId: user?.uid || 'admin',
         submissionDateTime: new Date().toISOString()
       };
-      
-      const photoData = {
-        marksheetPhotoBase64: marksheetPhotoBase64 || "",
-        aadhaarPhotoBase64: aadhaarPhotoBase64 || ""
-      };
 
-      // Import from index.ts
-      const { saveStudentWithPhotosNonBlocking } = await import('@/firebase');
-      saveStudentWithPhotosNonBlocking(firestore, studentData, photoData).catch(err => {
+      const { saveStudentNonBlocking } = await import('@/firebase');
+      saveStudentNonBlocking(firestore, studentData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'સેવ ભૂલ: ' + err.message });
       });
       
@@ -497,7 +289,6 @@ export default function StudentsListPage() {
       const updatedPercentage = parseFloat(((editingStudent.obtainedMarks / editingStudent.totalMarks) * 100).toFixed(2));
       const studentTextData = editingStudent;
       const studentData = { ...studentTextData, percentage: updatedPercentage };
-      const photoData = { marksheetPhotoBase64: marksheetPhotoBase64 || "", aadhaarPhotoBase64: aadhaarPhotoBase64 || "" };
       updateStudentNonBlocking(firestore, editingStudent.id, studentData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડેટાબેઝ અપડેટ નિષ્ફળ: ' + err.message });
       });
@@ -506,24 +297,6 @@ export default function StudentsListPage() {
     } catch (e: any) { toast({ variant: 'destructive', title: 'ભૂલ', description: e.message }); }
     finally { setIsUpdating(false); }
   };
-
-  const handleImageReplace = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (file) {
-      setPhotoLoading(prev => ({ ...prev, [field]: true }));
-      try {
-        const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
-        const base64 = await compressImageToBase64(file, options);
-        if (window.location.hash.includes('edit')) {
-          setEditingStudent(prev => prev ? { ...prev, [field]: base64 } : null);
-        } else {
-          setNewStudent(prev => ({ ...prev, [field]: base64 }));
-        }
-      } catch (error: any) { toast({ variant: 'destructive', title: 'ભૂલ', description: error.message }); }
-      finally { setPhotoLoading(prev => ({ ...prev, [field]: false })); }
-    }
-  }, [toast]);
 
   const generateRankedStudents = useCallback(() => {
     if (!filteredStudents || filteredStudents.length === 0) return { topRankers: [], remaining: [] };
