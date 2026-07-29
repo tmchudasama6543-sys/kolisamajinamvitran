@@ -195,24 +195,27 @@ export default function StudentsListPage() {
         const processedData = ensureBase64Prefix(base64Data);
         setPhotoLoading(prev => ({ ...prev, [fKey]: true }));
         
-        compressDataUrl(processedData, { quality: 0.4, maxWidth: 800 })
-          .then(compressed => {
-            setEditingStudent(prev => {
-              if (prev) return { ...prev, [fKey]: compressed };
-              setNewStudent(p => ({ ...p, [fKey]: compressed }));
-              return prev;
+        // Yield the main thread so React can render the loading spinner before heavy compression
+        setTimeout(() => {
+          compressDataUrl(processedData, { quality: 0.4, maxWidth: 800 })
+            .then(compressed => {
+              setEditingStudent(prev => {
+                if (prev) return { ...prev, [fKey]: compressed };
+                setNewStudent(p => ({ ...p, [fKey]: compressed }));
+                return prev;
+              });
+            })
+            .catch(() => {
+              setEditingStudent(prev => {
+                if (prev) return { ...prev, [fKey]: processedData };
+                setNewStudent(p => ({ ...p, [fKey]: processedData }));
+                return prev;
+              });
+            })
+            .finally(() => {
+              setPhotoLoading(prev => ({ ...prev, [fKey]: false }));
             });
-          })
-          .catch(() => {
-            setEditingStudent(prev => {
-              if (prev) return { ...prev, [fKey]: processedData };
-              setNewStudent(p => ({ ...p, [fKey]: processedData }));
-              return prev;
-            });
-          })
-          .finally(() => {
-            setPhotoLoading(prev => ({ ...prev, [fKey]: false }));
-          });
+        }, 100);
       };
       (window as any).handleNativeEditImage = callback;
       (window as any).handleNativeImage = callback;
