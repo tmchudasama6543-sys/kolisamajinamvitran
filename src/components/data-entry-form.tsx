@@ -286,7 +286,7 @@ export default function CenterPanel() {
 
         <CardContent className="p-6 sm:p-12">
           <Form {...form}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 sm:space-y-12">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
 
               {/* 1. Marksheet Photo */}
               <div className="space-y-3">
@@ -356,7 +356,7 @@ export default function CenterPanel() {
 
               {/* 3. Name */}
               <FormField control={form.control} name="studentName" render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-1.5">
                   <FormLabel className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ (ગુજરાતીમાં)</FormLabel>
                   <FormControl><Input placeholder="નામ લખો" {...field} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30 shadow-inner" /></FormControl>
                   <FormMessage className="font-bold text-rose-500" />
@@ -365,7 +365,7 @@ export default function CenterPanel() {
 
               {/* 4. Standard */}
               <FormField control={form.control} name="standard" render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-1.5">
                   <FormLabel className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">🎓 ધોરણ</FormLabel>
                   <SearchableSelect options={academicStandards} value={field.value} onSelect={field.onChange} placeholder="ધોરણ પસંદ કરો..." label="ધોરણ" />
                   <FormMessage className="font-bold text-rose-500" />
@@ -374,7 +374,7 @@ export default function CenterPanel() {
 
               {/* 5. Village */}
               <FormField control={form.control} name="villageName" render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-1.5">
                   <FormLabel className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">📍 ગામનું નામ</FormLabel>
                   <SearchableSelect options={palitanaVillages} value={field.value} onSelect={field.onChange} placeholder="ગામ પસંદ કરો..." label="ગામ" />
                   <FormMessage className="font-bold text-rose-500" />
@@ -383,7 +383,7 @@ export default function CenterPanel() {
 
               {/* Mobile Number */}
               <FormField control={form.control} name="mobileNumber" render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-1.5">
                   <FormLabel className="text-[11px] font-black uppercase text-emerald-600 tracking-widest px-1">📱 મોબાઈલ નંબર</FormLabel>
                   <FormControl><Input type="tel" {...field} onChange={e => { const v = e.target.value.replace(/\D/g, ''); if (v.length <= 10) field.onChange(v); }} className="h-16 font-black text-xl sm:text-2xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10 shadow-inner" /></FormControl>
                   <FormMessage className="font-bold text-rose-500" />
@@ -392,7 +392,7 @@ export default function CenterPanel() {
 
               {/* 6. Obtained Marks */}
               <FormField control={form.control} name="obtainedMarks" render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-1.5">
                   <FormLabel className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block text-center">✅ મેળવેલ ગુણ</FormLabel>
                   <FormControl><Input type="number" {...field} className="h-16 font-black text-xl sm:text-2xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30 shadow-inner" /></FormControl>
                   <FormMessage className="font-bold text-rose-500 text-center" />

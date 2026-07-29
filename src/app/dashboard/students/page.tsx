@@ -584,8 +584,8 @@ export default function StudentsListPage() {
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto p-4 sm:p-10 space-y-6 sm:space-y-8 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
-          <div className="space-y-6 sm:space-y-8">
+        <div className="max-w-2xl mx-auto p-4 sm:p-10 space-y-5 sm:space-y-6 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
+          <div className="space-y-5 sm:space-y-6">
              {(['marksheetPhotoBase64', 'aadhaarPhotoBase64'] as const).map(f => {
                const fKey = f === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
                const label = f === 'marksheetPhotoBase64' ? '📄 માર્કશીટ ફોટો' : '🪪 આધાર કાર્ડ ફોટો';
@@ -628,28 +628,28 @@ export default function StudentsListPage() {
              })}
           </div>
 
-          <div className="space-y-5 pt-2">
-            <div className="space-y-2">
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ</label>
                <Input placeholder="નામ લખો..." value={newStudent.name} onChange={e => setNewStudent(prev => ({...prev, name: e.target.value}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">🎓 ધોરણ</label>
                <SearchableSelect options={academicStandards} value={newStudent.standard} onSelect={val => setNewStudent(prev => ({...prev, standard: val}))} placeholder="ધોરણ પસંદ કરો..." label="ધોરણ" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">📍 ગામનું નામ</label>
                <SearchableSelect options={palitanaVillages} value={newStudent.villageName} onSelect={val => setNewStudent(prev => ({...prev, villageName: val}))} placeholder="ગામ પસંદ કરો..." label="ગામ" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-emerald-600 tracking-widest px-1">📱 મોબાઈલ નંબર</label>
                <Input placeholder="૧૦ આંકડાનો નંબર" value={newStudent.mobileNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setNewStudent(prev => ({...prev, mobileNumber: val})); }} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">✅ મેળવેલ ગુણ</label>
                <Input type="number" value={newStudent.obtainedMarks || ''} onChange={e => setNewStudent(prev => ({...prev, obtainedMarks: Number(e.target.value)}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">📊 કુલ ગુણ</label>
                <Input type="number" value={newStudent.totalMarks || ''} onChange={e => setNewStudent(prev => ({...prev, totalMarks: Number(e.target.value)}))} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
@@ -726,28 +726,28 @@ export default function StudentsListPage() {
              })}
           </div>
 
-          <div className="space-y-5 pt-2">
-            <div className="space-y-2">
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">👤 વિદ્યાર્થીનું નામ</label>
                <Input value={editingStudent.name} onChange={e => setEditingStudent(prev => prev ? {...prev, name: e.target.value} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-slate-50/30" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">🎓 ધોરણ</label>
                <SearchableSelect options={academicStandards} value={editingStudent.standard} onSelect={val => setEditingStudent(prev => prev ? {...prev, standard: val} : null)} placeholder="ધોરણ પસંદ કરો..." label="ધોરણ" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-slate-500 tracking-widest px-1">📍 ગામનું નામ</label>
                <SearchableSelect options={palitanaVillages} value={editingStudent.villageName} onSelect={val => setEditingStudent(prev => prev ? {...prev, villageName: val} : null)} placeholder="ગામ પસંદ કરો..." label="ગામ" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black uppercase text-emerald-600 tracking-widest px-1">📱 મોબાઈલ નંબર</label>
                <Input value={editingStudent.mobileNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setEditingStudent(prev => prev ? {...prev, mobileNumber: val} : null); }} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">✅ મેળવેલ ગુણ</label>
                <Input type="number" value={editingStudent.obtainedMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, obtainedMarks: Number(e.target.value)} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">📊 કુલ ગુણ</label>
                <Input type="number" value={editingStudent.totalMarks} onChange={e => setEditingStudent(prev => prev ? {...prev, totalMarks: Number(e.target.value)} : null)} className="h-14 font-black text-lg sm:text-xl text-slate-900 text-center rounded-2xl border-2 bg-slate-50/30" />
             </div>
