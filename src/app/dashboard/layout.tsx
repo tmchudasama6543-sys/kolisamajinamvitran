@@ -28,8 +28,12 @@ export default function DashboardLayout({
   };
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/');
+    if (!loading) {
+      if (!user) {
+        router.replace('/');
+      } else if (user.email !== 'jayhind6543@gmail.com' && user.accessApproved === false) {
+        router.replace('/');
+      }
     }
   }, [user, loading, router]);
 

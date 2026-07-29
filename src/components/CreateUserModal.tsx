@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, PlusCircle, X, ShieldCheck, UserCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
@@ -13,7 +13,6 @@ import { useFirestore } from '@/firebase';
 export default function CreateUserModal({ onClose, adminEmail }: { onClose: () => void, adminEmail: string }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'data_entry' | 'admin'>('data_entry');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -25,12 +24,13 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
     }
     
     setLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
     
     try {
       const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.toLowerCase(), password, returnSecureToken: true })
+        body: JSON.stringify({ email: cleanEmail, password, returnSecureToken: true })
       });
 
       const data = await response.json();
@@ -41,22 +41,21 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       
       const newUserId = data.localId;
       
-      // Add user to users collection (Auto-approved because Admin is creating it)
+      // 1. Add user to 'users' collection as approved admin
       await setDoc(doc(firestore, 'users', newUserId), {
-        email: email.toLowerCase(),
-        role: role,
+        email: cleanEmail,
+        role: 'admin',
         dataEntryCenterId: null,
         accessApproved: true
       });
       
-      if (role === 'admin') {
-        await setDoc(doc(firestore, 'roles_admin', newUserId), {
-          email: email.toLowerCase(),
-          createdAt: new Date().toISOString()
-        });
-      }
+      // 2. Add user to 'roles_admin' collection
+      await setDoc(doc(firestore, 'roles_admin', newUserId), {
+        email: cleanEmail,
+        createdAt: new Date().toISOString()
+      });
       
-      toast({ title: 'સફળતા', description: 'નવું એકાઉન્ટ સફળતાપૂર્વક બની ગયું છે!' });
+      toast({ title: 'સફળતા', description: `નવું એડમિન એકાઉન્ટ (${cleanEmail}) સફળતાપૂર્વક બની ગયું છે!` });
       onClose();
     } catch (error: any) {
       let errorMsg = error.message;
@@ -75,7 +74,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 z-[1001] flex flex-col">
         <div className="flex items-center justify-between p-6 pb-4 border-b">
           <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            <PlusCircle className="h-6 w-6 text-primary" /> નવું એકાઉન્ટ બનાવો
+            <ShieldCheck className="h-6 w-6 text-[#4F46E5]" /> નવું એડમિન એકાઉન્ટ બનાવો
           </h2>
           <button onClick={onClose} className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
             <X className="h-5 w-5 text-slate-500" />
@@ -84,13 +83,14 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
         
         <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="p-6 space-y-5">
           <div className="space-y-2">
-            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">નવું ઈમેલ</Label>
+            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">નવું એડમિન ઈમેલ</Label>
             <Input 
               type="email" 
-              placeholder="example@email.com" 
+              placeholder="admin@email.com" 
               value={email} 
               onChange={e => setEmail(e.target.value)} 
-              className="h-12 rounded-xl focus-visible:ring-primary"
+              className="h-12 rounded-xl focus-visible:ring-[#4F46E5]"
+              required
             />
           </div>
           
@@ -101,47 +101,17 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
               placeholder="ઓછામાં ઓછા 6 અક્ષર" 
               value={password} 
               onChange={e => setPassword(e.target.value)} 
-              className="h-12 rounded-xl focus-visible:ring-primary"
+              className="h-12 rounded-xl focus-visible:ring-[#4F46E5]"
+              required
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">એકાઉન્ટનો પ્રકાર</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setRole('data_entry')}
-                className={`h-14 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                  role === 'data_entry' 
-                    ? 'border-[#059669] bg-[#ECFDF5] text-[#059669] shadow-sm' 
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <UserCircle className="h-5 w-5" /> ડેટા એન્ટ્રી
-              </button>
-
-              {adminEmail.toLowerCase() === 'jayhind6543@gmail.com' && (
-                <button
-                  type="button"
-                  onClick={() => setRole('admin')}
-                  className={`h-14 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                    role === 'admin' 
-                      ? 'border-[#4F46E5] bg-indigo-50 text-[#4F46E5] shadow-sm' 
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <ShieldCheck className="h-5 w-5" /> એડમિન (Admin)
-                </button>
-              )}
-            </div>
           </div>
           
           <Button 
             type="submit"
             disabled={loading} 
-            className="w-full h-14 mt-4 rounded-xl font-black text-lg shadow-lg hover:scale-[1.02] transition-all"
+            className="w-full h-14 mt-4 rounded-xl font-black text-lg shadow-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white transition-all"
           >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એકાઉન્ટ બનાવો'}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એડમિન એકાઉન્ટ બનાવો'}
           </Button>
         </form>
       </div>

@@ -80,14 +80,17 @@ export function useUser(): UserHookResult {
           const userData = docSnap.data();
           
           let finalRole = userData.role || 'data_entry';
-          let finalApproval = userData.accessApproved || false;
+          let finalApproval = userData.accessApproved !== undefined ? userData.accessApproved : false;
 
           const adminDocRef = doc(firestore, 'roles_admin', firebaseUser.uid);
           const adminDoc = await getDoc(adminDocRef);
           
           if (adminDoc.exists()) {
             finalRole = 'admin';
-            finalApproval = true;
+            // Only set finalApproval = true if accessApproved is NOT explicitly set to false (i.e. Revoked)
+            if (userData.accessApproved !== false) {
+              finalApproval = true;
+            }
           }
 
           finalUser = { 
