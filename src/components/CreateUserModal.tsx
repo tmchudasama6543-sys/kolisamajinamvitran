@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, PlusCircle, X, ShieldCheck, UserCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
-import { doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 import { useFirestore } from '@/firebase';
 
@@ -28,14 +27,20 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
     
     setLoading(true);
     
-    // Initialize a temporary secondary app to create a user without logging out the admin
-    const tempAppName = 'TempApp_' + Date.now();
-    const tempApp = initializeApp(firebaseConfig, tempAppName);
-    const tempAuth = getAuth(tempApp);
-    
     try {
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
-      const newUserId = userCredential.user.uid;
+      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), password, returnSecureToken: true })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${data.error?.message || 'Unknown Identity Toolkit Error'}`);
+      }
+      
+      const newUserId = data.localId;
       
       // Add user to users collection (Auto-approved because Admin is creating it)
       await setDoc(doc(firestore, 'users', newUserId), {
@@ -56,11 +61,11 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       onClose();
     } catch (error: any) {
       let errorMsg = error.message;
-      if (error.code === 'auth/email-already-in-use') errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
-      if (error.code === 'auth/weak-password') errorMsg = 'પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.';
+      if (errorMsg.includes('EMAIL_EXISTS')) errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
+      if (errorMsg.includes('WEAK_PASSWORD')) errorMsg = 'પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.';
+      if (errorMsg.includes('PERMISSION_DENIED')) errorMsg = 'Firebase Rules અપડેટ નથી થયા. કૃપા કરીને Rules ચેક કરો.';
       toast({ variant: 'destructive', title: 'એકાઉન્ટ બનાવવામાં ભૂલ', description: errorMsg });
     } finally {
-      await deleteApp(tempApp);
       setLoading(false);
     }
   };
