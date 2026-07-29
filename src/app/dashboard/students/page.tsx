@@ -319,6 +319,7 @@ export default function StudentsListPage() {
 
     const topRankers: any[] = [];
     const remaining: any[] = [];
+    const allRanked: any[] = [];
 
     const sortedStandards = Object.keys(groupedByStandard).sort((a, b) => {
       const idxA = academicStandards.indexOf(a);
@@ -357,6 +358,8 @@ export default function StudentsListPage() {
           'મોબાઈલ નંબર (Mobile Number)': s.mobileNumber
         };
 
+        allRanked.push(row);
+
         if (currentRank <= 3) {
           topRankers.push(row);
         } else {
@@ -367,7 +370,7 @@ export default function StudentsListPage() {
       });
     });
 
-    return { topRankers, remaining };
+    return { topRankers, remaining, allRanked };
   }, [filteredStudents]);
 
   const handleDownloadTopRankers = useCallback(() => {
@@ -401,10 +404,9 @@ export default function StudentsListPage() {
        toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
        return;
     }
-    const { topRankers, remaining } = generateRankedStudents();
-    const data = [...topRankers, ...remaining];
+    const { allRanked } = generateRankedStudents();
     
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const worksheet = XLSX.utils.json_to_sheet(allRanked);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "All Students");
     XLSX.writeFile(workbook, `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
