@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useFirestore, useCollection, useMemoFirebase, restoreDocumentFromTrash, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, limit, writeBatch, getDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function TrashFolderPage() {
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   const trashQuery = useMemoFirebase(
-    () => (user?.role === 'admin' ? query(collection(firestore, 'trash_students'), orderBy('deletedAt', 'desc')) : null),
+    () => (user?.role === 'admin' ? query(collection(firestore, 'trash_students'), orderBy('deletedAt', 'desc'), limit(5000)) : null),
     [user, firestore]
   );
 
