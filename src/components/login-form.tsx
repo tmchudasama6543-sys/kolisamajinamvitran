@@ -119,7 +119,11 @@ export default function LoginForm() {
       }
     } catch (error: any) {
       let errorMsg = 'કૃપા કરીને તમારી વિગતો તપાસો.';
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      if (
+        error.code === 'auth/wrong-password' || 
+        error.code === 'auth/invalid-credential' || 
+        error.code === 'auth/invalid-login-credentials'
+      ) {
         errorMsg = 'તમે દાખલ કરેલો પાસવર્ડ ખોટો છે.';
       } else if (error.code === 'auth/user-not-found') {
         errorMsg = 'આ ઈમેલ પર કોઈ એકાઉન્ટ નથી.';
@@ -171,25 +175,10 @@ export default function LoginForm() {
                   <CardDescription>માત્ર મુખ્ય એડમિન માટે જ એક્સેસ.</CardDescription>
                 </CardHeader>
                 <Tabs defaultValue="signin">
-                  <TabsList className="grid w-fit grid-cols-2 mb-6 bg-muted/30 p-1 rounded-xl">
-                    <TabsTrigger value="signin" className="rounded-lg text-xs font-bold">સાઇન ઇન</TabsTrigger>
-                    <TabsTrigger value="signup" className="rounded-lg text-xs font-bold">સાઇન અપ</TabsTrigger>
-                  </TabsList>
                   <TabsContent value="signin">
                     <AuthFields 
                       form={adminForm} 
                       mode="signin" 
-                      role="admin" 
-                      loading={loading} 
-                      showPassword={showPassword} 
-                      setShowPassword={setShowPassword} 
-                      onSubmit={handleAuth} 
-                    />
-                  </TabsContent>
-                  <TabsContent value="signup">
-                    <AuthFields 
-                      form={adminForm} 
-                      mode="signup" 
                       role="admin" 
                       loading={loading} 
                       showPassword={showPassword} 

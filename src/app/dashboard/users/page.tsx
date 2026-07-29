@@ -178,7 +178,7 @@ export default function UsersPage() {
         </div>
       )}
 
-      {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} />}
+      {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} adminEmail={adminUser?.email || ''} />}
     </div>
   );
 }

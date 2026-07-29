@@ -13,7 +13,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 import { useFirestore } from '@/firebase';
 
-export default function CreateUserModal({ onClose }: { onClose: () => void }) {
+export default function CreateUserModal({ onClose, adminEmail }: { onClose: () => void, adminEmail: string }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'data_entry' | 'admin'>('data_entry');
@@ -112,9 +112,11 @@ export default function CreateUserModal({ onClose }: { onClose: () => void }) {
                 <SelectItem value="data_entry">
                   <div className="flex items-center gap-2 font-bold"><UserCircle className="h-4 w-4 text-[#059669]" /> ડેટા એન્ટ્રી ઓપરેટર</div>
                 </SelectItem>
-                <SelectItem value="admin">
-                  <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4 text-[#4F46E5]" /> એડમિન (Admin)</div>
-                </SelectItem>
+                {adminEmail === 'jayhind6543@gmail.com' && (
+                  <SelectItem value="admin">
+                    <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4 text-[#4F46E5]" /> એડમિન (Admin)</div>
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
