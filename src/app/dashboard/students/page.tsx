@@ -50,29 +50,11 @@ type StudentData = {
 
 const gujaratiRegex = /^[\u0A80-\u0AFF\s\.\(\)\-]+$/;
 
-const exportExcelFile = async (workbook: any, filename: string) => {
+const exportExcelFile = (workbook: any, filename: string) => {
   try {
     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    
-    // Use standard Excel MIME type
     const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     
-    if (typeof navigator !== 'undefined' && navigator.canShare) {
-      const file = new File([wbout], filename, { type: mimeType });
-      if (navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: filename,
-          });
-          return;
-        } catch (err: any) {
-          if (err.name !== 'AbortError') console.error('Share failed:', err);
-        }
-      }
-    }
-    
-    // Fallback for Desktop
     const blob = new Blob([wbout], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -80,8 +62,10 @@ const exportExcelFile = async (workbook: any, filename: string) => {
     a.download = filename;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
   } catch (err) {
     console.error("Export error:", err);
   }
@@ -437,7 +421,7 @@ export default function StudentsListPage() {
     return { topRankers, remaining, allRanked };
   }, [filteredStudents]);
 
-  const handleDownloadTopRankers = useCallback(async () => {
+  const handleDownloadTopRankers = useCallback(() => {
     const { topRankers } = generateRankedStudents();
     if (topRankers.length === 0) {
        toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
@@ -447,12 +431,12 @@ export default function StudentsListPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Top Rankers");
     
-    await exportExcelFile(workbook, `Top_Rankers_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    exportExcelFile(workbook, `Top_Rankers_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
     
     toast({ title: 'સફળ!', description: 'ટોપર વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [generateRankedStudents, toast]);
 
-  const handleDownloadRemaining = useCallback(async () => {
+  const handleDownloadRemaining = useCallback(() => {
     const { remaining } = generateRankedStudents();
     if (remaining.length === 0) {
        toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
@@ -462,12 +446,12 @@ export default function StudentsListPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Remaining Students");
     
-    await exportExcelFile(workbook, `Remaining_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    exportExcelFile(workbook, `Remaining_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
     
     toast({ title: 'સફળ!', description: 'બાકીના વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [generateRankedStudents, toast]);
 
-  const handleExportToExcel = useCallback(async () => {
+  const handleExportToExcel = useCallback(() => {
     if (!filteredStudents || filteredStudents.length === 0) {
        toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
        return;
@@ -478,7 +462,7 @@ export default function StudentsListPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "All Students");
     
-    await exportExcelFile(workbook, `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
+    exportExcelFile(workbook, `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
     
     toast({ title: 'સફળ!', description: 'તમામ વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
   }, [filteredStudents, generateRankedStudents, toast]);
