@@ -79,6 +79,7 @@ export default function CenterPanel() {
 
   const triggerCamera = useCallback(async (field: 'marksheet' | 'aadhar') => {
     if (typeof window !== 'undefined' && (window as any).AppInventor) {
+      setCompressing(p => ({ ...p, [field]: true }));
       try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
       return;
     }
@@ -296,7 +297,11 @@ export default function CenterPanel() {
                 </div>
                 <div className={cn("rounded-2xl border-2 border-dashed overflow-hidden bg-slate-50 flex items-center justify-center transition-all", photos.marksheet ? 'aspect-video p-3 border-emerald-300 bg-emerald-50/20' : 'min-h-[160px] p-6')}>
                    {compressing.marksheet ? (
-                     <div className="flex flex-col items-center justify-center gap-3 py-10 w-full"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /><span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">ફોટો સંકુચિત...</span></div>
+                     <div className="flex flex-col items-center justify-center gap-3 py-8 w-full">
+                       <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                       <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest text-center px-2">કૅમેરા / પ્રોસેસિંગ...</span>
+                       <Button type="button" variant="ghost" size="sm" onClick={() => setCompressing(p => ({ ...p, marksheet: false }))} className="mt-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 h-8 px-3 rounded-xl text-xs font-bold">રદ કરો</Button>
+                     </div>
                    ) : photos.marksheet ? (
                      <div className="relative w-full h-full group">
                        <img src={photos.marksheet} className="w-full h-full object-contain cursor-zoom-in rounded-xl shadow-sm" alt="preview" onClick={() => openPreview(photos.marksheet!)} />
@@ -329,7 +334,11 @@ export default function CenterPanel() {
                 </div>
                 <div className={cn("rounded-2xl border-2 border-dashed overflow-hidden bg-slate-50 flex items-center justify-center transition-all", photos.aadhar ? 'aspect-video p-3 border-emerald-300 bg-emerald-50/20' : 'min-h-[160px] p-6')}>
                    {compressing.aadhar ? (
-                     <div className="flex flex-col items-center justify-center gap-3 py-10 w-full"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /><span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">ફોટો સંકુચિત...</span></div>
+                     <div className="flex flex-col items-center justify-center gap-3 py-8 w-full">
+                       <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                       <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest text-center px-2">કૅમેરા / પ્રોસેસિંગ...</span>
+                       <Button type="button" variant="ghost" size="sm" onClick={() => setCompressing(p => ({ ...p, aadhar: false }))} className="mt-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 h-8 px-3 rounded-xl text-xs font-bold">રદ કરો</Button>
+                     </div>
                    ) : photos.aadhar ? (
                      <div className="relative w-full h-full group">
                        <img src={photos.aadhar} className="w-full h-full object-contain cursor-zoom-in rounded-xl shadow-sm" alt="preview" onClick={() => openPreview(photos.aadhar!)} />
