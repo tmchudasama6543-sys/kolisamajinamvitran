@@ -118,10 +118,23 @@ export default function LoginForm() {
         toast({ title: 'એકાઉન્ટ સફળતાપૂર્વક બન્યું', description: 'હવે તમે લોગિન કરી શકો છો.' });
       }
     } catch (error: any) {
+      let errorMsg = 'કૃપા કરીને તમારી વિગતો તપાસો.';
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMsg = 'તમે દાખલ કરેલો પાસવર્ડ ખોટો છે.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMsg = 'આ ઈમેલ પર કોઈ એકાઉન્ટ નથી.';
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMsg = 'વધુ પડતા ખોટા પ્રયત્નોને કારણે એકાઉન્ટ થોડીવાર માટે બ્લોક થયું છે.';
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
       toast({
         variant: 'destructive',
         title: 'ભૂલ આવી',
-        description: error.message || 'કૃપા કરીને તમારી વિગતો તપાસો.',
+        description: errorMsg,
       });
     } finally {
       setLoading(false);
