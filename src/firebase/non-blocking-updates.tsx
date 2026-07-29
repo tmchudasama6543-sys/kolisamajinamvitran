@@ -152,11 +152,8 @@ export async function moveDocumentToTrash(db: Firestore, sourceCollection: strin
     
     const batch = writeBatch(db);
     
-    // Remove photo fields from main student document to prevent bloating trash_students
-    const { marksheetPhotoBase64, aadhaarPhotoBase64, ...cleanData } = data;
-    
     batch.set(trashRef, {
-      ...cleanData,
+      ...data,
       deletedAt: new Date().toISOString(),
       deletedBy: adminId,
       originalId: docId

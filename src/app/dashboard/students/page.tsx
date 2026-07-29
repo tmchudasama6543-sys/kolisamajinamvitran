@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { palitanaVillages } from '@/lib/palitana-villages';
 import { academicStandards } from '@/lib/standards';
-import { compressImageToBase64, compressDataUrl } from '@/lib/image';
+
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
 import { CameraModal } from '@/components/CameraModal';
@@ -123,11 +123,7 @@ export default function StudentsListPage() {
       const hash = window.location.hash;
       if (!hash.includes('edit')) setEditingStudent(null);
       if (!hash.includes('new')) setIsAddingNew(false);
-      if (!hash.includes('preview')) {
-        setPreviewImage(null);
-        setZoomLevel(1);
-        setPosition({ x: 0, y: 0 });
-      }
+
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -461,7 +457,7 @@ export default function StudentsListPage() {
     setIsSaving(true);
     try {
       const percentage = newStudent.totalMarks > 0 ? parseFloat(((newStudent.obtainedMarks / newStudent.totalMarks) * 100).toFixed(2)) : 0;
-      const { marksheetPhotoBase64, aadhaarPhotoBase64, ...textData } = newStudent;
+      const textData = newStudent;
       
       const studentData = {
         ...textData,
@@ -499,10 +495,10 @@ export default function StudentsListPage() {
     setIsUpdating(true);
     try {
       const updatedPercentage = parseFloat(((editingStudent.obtainedMarks / editingStudent.totalMarks) * 100).toFixed(2));
-      const { marksheetPhotoBase64, aadhaarPhotoBase64, ...studentTextData } = editingStudent;
+      const studentTextData = editingStudent;
       const studentData = { ...studentTextData, percentage: updatedPercentage };
       const photoData = { marksheetPhotoBase64: marksheetPhotoBase64 || "", aadhaarPhotoBase64: aadhaarPhotoBase64 || "" };
-      updateStudentNonBlocking(firestore, editingStudent.id, studentData, photoData).catch(err => {
+      updateStudentNonBlocking(firestore, editingStudent.id, studentData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડેટાબેઝ અપડેટ નિષ્ફળ: ' + err.message });
       });
       toast({ title: "સફળ!", description: "માહિતી અપડેટ થઈ ગઈ." });
@@ -650,52 +646,7 @@ export default function StudentsListPage() {
         </div>
 
         <div className="max-w-2xl mx-auto p-4 sm:p-10 space-y-5 sm:space-y-6 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
-          <div className="space-y-5 sm:space-y-6">
-             {(['marksheetPhotoBase64', 'aadhaarPhotoBase64'] as const).map(f => {
-               const fKey = f === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-               const label = f === 'marksheetPhotoBase64' ? '📄 માર્કશીટ ફોટો' : '🪪 આધાર કાર્ડ ફોટો';
-               const photo = newStudent[f];
-               const loading = photoLoading[f];
-               return (
-               <div key={f} className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <label className="text-xs font-black uppercase text-slate-600 tracking-widest">{label}</label>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">(ઐચ્છિક)</span>
-                  </div>
-                  <div className={cn("rounded-2xl border-2 border-dashed overflow-hidden bg-slate-50 flex items-center justify-center transition-all", photo ? 'aspect-video p-3 border-emerald-300 bg-emerald-50/20' : 'min-h-[160px] p-6')}>
-                     {loading ? (
-                       <div className="flex flex-col items-center justify-center gap-3 py-8 w-full">
-                         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-                         <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest text-center px-2">કૅમેરા / પ્રોસેસિંગ...</span>
-                         <Button type="button" variant="ghost" size="sm" onClick={() => setPhotoLoading(p => ({ ...p, [f]: false }))} className="mt-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 h-8 px-3 rounded-xl text-xs font-bold">રદ કરો</Button>
-                       </div>
-                     ) : photo ? (
-                       <div className="relative w-full h-full group">
-                         <img src={photo} className="w-full h-full object-contain cursor-zoom-in rounded-xl shadow-sm" alt="preview" onClick={() => openPreview(photo)} />
-                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3 rounded-xl">
-                           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => openPreview(photo)}><Eye className="h-6 w-6" /></Button>
-                           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => triggerEditCamera(f)}><Camera className="h-6 w-6" /></Button>
-                           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => triggerEditGallery(f)}><Image className="h-6 w-6" /></Button>
-                           <Button type="button" variant="destructive" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => setNewStudent(prev => ({ ...prev, [f]: '' }))}><Trash2 className="h-6 w-6" /></Button>
-                         </div>
-                       </div>
-                     ) : (
-                       <div className="flex flex-col items-center justify-center gap-4 w-full text-center p-4">
-                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">ફોટો ઉમેરો</span>
-                         <div className="flex flex-col gap-3 w-full max-w-xs">
-                           <button type="button" className="h-14 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform" onClick={() => triggerEditCamera(f)}><Camera className="h-5 w-5" /><span>લાઈવ કૅમેરો</span></button>
-                           <button type="button" className="h-14 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform" onClick={() => triggerEditGallery(f)}><Image className="h-5 w-5" /><span>ગેલેરી</span></button>
-                         </div>
-                         <span className="text-[10px] font-bold text-slate-400">ના ઉમેરો તો પણ સેવ થશે</span>
-                       </div>
-                     )}
-                     <input id={`${uid}-new-${fKey}-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleImageReplace(ev, f)} />
-                     <input id={`${uid}-new-${fKey}-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleImageReplace(ev, f)} />
-                  </div>
-               </div>
-               );
-             })}
-          </div>
+          
 
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
@@ -752,52 +703,7 @@ export default function StudentsListPage() {
         </div>
 
         <div className="max-w-2xl mx-auto p-4 sm:p-10 space-y-6 sm:space-y-8 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100">
-          <div className="space-y-6 sm:space-y-8">
-             {(['marksheetPhotoBase64', 'aadhaarPhotoBase64'] as const).map(f => {
-               const fKey = f === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-               const label = f === 'marksheetPhotoBase64' ? '📄 માર્કશીટ ફોટો' : '🪪 આધાર કાર્ડ ફોટો';
-               const photo = editingStudent[f];
-               const loading = photoLoading[f] || isFetchingPhotos === editingStudent.id;
-               return (
-               <div key={f} className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <label className="text-xs font-black uppercase text-slate-600 tracking-widest">{label}</label>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">(ઐચ્છિક)</span>
-                  </div>
-                  <div className={cn("rounded-2xl border-2 border-dashed overflow-hidden bg-slate-50 flex items-center justify-center transition-all", photo ? 'aspect-video p-3 border-emerald-300 bg-emerald-50/20' : 'min-h-[160px] p-6')}>
-                     {loading ? (
-                       <div className="flex flex-col items-center justify-center gap-3 py-8 w-full">
-                         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-                         <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest text-center px-2">કૅમેરા / પ્રોસેસિંગ...</span>
-                         <Button type="button" variant="ghost" size="sm" onClick={() => setPhotoLoading(p => ({ ...p, [f]: false }))} className="mt-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 h-8 px-3 rounded-xl text-xs font-bold">રદ કરો</Button>
-                       </div>
-                     ) : photo ? (
-                       <div className="relative w-full h-full group">
-                         <img src={photo as string} className="w-full h-full object-contain cursor-zoom-in rounded-xl shadow-sm" alt="preview" onClick={() => openPreview(photo as string)} style={{ pointerEvents: 'auto' }} />
-                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3 rounded-xl">
-                           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => openPreview(photo as string)}><Eye className="h-6 w-6" /></Button>
-                           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => triggerEditCamera(f)}><Camera className="h-6 w-6" /></Button>
-                           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => triggerEditGallery(f)}><Image className="h-6 w-6" /></Button>
-                           <Button type="button" variant="destructive" size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={() => setEditingStudent(prev => prev ? { ...prev, [f]: '' } : null)}><Trash2 className="h-6 w-6" /></Button>
-                         </div>
-                       </div>
-                     ) : (
-                       <div className="flex flex-col items-center justify-center gap-4 w-full text-center p-4">
-                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">ફોટો ઉમેરો</span>
-                         <div className="flex flex-col gap-3 w-full max-w-xs">
-                           <button type="button" className="h-14 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform" onClick={() => triggerEditCamera(f)}><Camera className="h-5 w-5" /><span>લાઈવ કૅમેરો</span></button>
-                           <button type="button" className="h-14 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform" onClick={() => triggerEditGallery(f)}><Image className="h-5 w-5" /><span>ગેલેરી</span></button>
-                         </div>
-                         <span className="text-[10px] font-bold text-slate-400">ના ઉમેરો તો પણ સેવ થશે</span>
-                       </div>
-                     )}
-                     <input id={`${uid}-edit-${fKey}-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleImageReplace(ev, f)} />
-                     <input id={`${uid}-edit-${fKey}-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleImageReplace(ev, f)} />
-                  </div>
-               </div>
-               );
-             })}
-          </div>
+          
 
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">

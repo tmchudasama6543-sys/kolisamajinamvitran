@@ -1,115 +1,11 @@
-'use client';
+const fs = require('fs');
+const path = require('path');
 
-import { useState, useEffect, useCallback, useMemo, useId, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Lock, CheckCircle2, Save } from 'lucide-react';
-import { useUser, useFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth';
-import { serverTimestamp } from 'firebase/firestore';
-import { palitanaVillages } from '@/lib/palitana-villages';
-import { academicStandards } from '@/lib/standards';
-import { cn } from '@/lib/utils';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { useToast } from '@/hooks/use-toast';
-import { motion, AnimatePresence } from 'motion/react';
+const filePath = path.join('d:', 'yuva matirial', 'koli samaj inam vitran 2026', 'koli samaj inam vitran 2026 app', 'src', 'components', 'data-entry-form.tsx');
+let content = fs.readFileSync(filePath, 'utf-8');
 
-const gujaratiRegex = /^[\u0A80-\u0AFF\s\.\(\)\-]+$/;
-
-const formSchema = z.object({
-  studentName: z.string().min(1, 'વિદ્યાર્થીનું નામ જરૂરી છે.').regex(gujaratiRegex, 'નામ માત્ર ગુજરાતી અક્ષરોમાં જ લખો.'),
-  villageName: z.string().min(1, 'ગામ પસંદ કરો.'),
-  standard: z.string().min(1, 'ધોરણ પસંદ કરો.'),
-  mobileNumber: z.string().length(10, 'મોબાઈલ નંબર ૧૦ આંકડાનો હોવો જોઈએ.'),
-  totalMarks: z.coerce.number().min(1, 'કુલ ગુણ ૧ થી વધુ હોવા જોઈએ.').or(z.literal('')),
-  obtainedMarks: z.coerce.number().min(0, 'મેળવેલ ગુણ ૦ થી વધુ હોવા જોઈએ.').or(z.literal('')),
-}).refine(data => {
-  if (data.totalMarks !== '' && data.obtainedMarks !== '') {
-    return Number(data.obtainedMarks) <= Number(data.totalMarks);
-  }
-  return true;
-}, { message: "મેળવેલ ગુણ કુલ ગુણ કરતા વધારે ના હોઈ શકે.", path: ["obtainedMarks"] });
-
-type FormValues = z.infer<typeof formSchema>;
-
-export default function CenterPanel() {
-  const { user } = useUser();
-  const { firestore, auth } = useFirebase();
-  const { toast } = useToast();
-  const router = useRouter();
-  const uid = useId();
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [percentage, setPercentage] = useState<string>('');
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { studentName: '', villageName: '', standard: '', mobileNumber: '', totalMarks: '' as any, obtainedMarks: '' as any },
-  });
-
-  const { watch, handleSubmit, reset } = form;
-  const watchedTotal = watch('totalMarks');
-  const watchedObtained = watch('obtainedMarks');
-
-  useEffect(() => {
-    const t = Number(watchedTotal), o = Number(watchedObtained);
-    setPercentage(t > 0 && watchedObtained !== '' ? ((o / t) * 100).toFixed(2) : '');
-  }, [watchedTotal, watchedObtained]);
-
-  const isApproved = useMemo(() => user?.accessApproved === true || user?.role === 'admin', [user]);
-
-  const onSubmit = useCallback(async (values: FormValues) => {
-    if (isSubmitting || !user?.uid) return;
-    setIsSubmitting(true);
-    try {
-      const studentData = {
-        name: values.studentName.trim(),
-        villageName: values.villageName,
-        standard: values.standard,
-        mobileNumber: values.mobileNumber,
-        totalMarks: Number(values.totalMarks),
-        obtainedMarks: Number(values.obtainedMarks),
-        percentage: parseFloat(percentage || '0'),
-        enteredByUserId: user.uid,
-        submissionDateTime: new Date().toISOString(),
-      };
-      
-      addDocumentNonBlocking(collection(firestore, 'students'), studentData).catch(err => {
-        toast({ variant: 'destructive', title: 'ભૂલ', description: 'સેવ ભૂલ: ' + err.message });
-      });
-      reset();
-      toast({ title: 'સફળ!', description: 'માહિતી સફળતાપૂર્વક સેવ થઈ ગઈ છે.' });
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: err.message || 'નેટવર્ક સમસ્યા.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [user, firestore, percentage, reset, toast, isSubmitting]);
-
-  if (!isApproved) {
-    return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center justify-center min-h-[80vh] p-4 w-full">
-        <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl border-2 border-rose-100 p-10 text-center">
-          <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-rose-100">
-            <Lock className="h-10 w-10 text-rose-500" />
-          </div>
-          <h2 className="text-3xl font-black text-rose-700 mb-3 tracking-tight">ઍક્સેસ બંધ છે</h2>
-          <p className="text-base font-semibold text-rose-400 mb-8 leading-relaxed">એડમિન દ્વારા મંજૂરી ન મળે ત્યાં સુધી ડેટા એન્ટ્રી કરી શકાશે નહીં.</p>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
+// The new return block
+const newReturn = `  return (
     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="p-4 sm:p-10 max-w-4xl mx-auto space-y-8 pb-64">
       <div className="pb-10 border-b-8 border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex items-center gap-4">
@@ -159,7 +55,7 @@ export default function CenterPanel() {
                 <FormLabel className="text-[11px] font-black uppercase text-emerald-600 tracking-widest px-1">📱 મોબાઈલ નંબર</FormLabel>
                 <FormControl>
                   <Input type="tel" maxLength={10} placeholder="૧૦ આંકડાનો નંબર" {...field} onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
+                    const val = e.target.value.replace(/\\D/g, '');
                     if (val.length <= 10) field.onChange(val);
                   }} className="h-14 font-black text-lg sm:text-xl text-slate-900 rounded-2xl border-2 px-6 bg-emerald-50/10" />
                 </FormControl>
@@ -190,7 +86,7 @@ export default function CenterPanel() {
             <div className="space-y-3 pt-2">
               <label className="text-[11px] font-black text-emerald-600 tracking-widest px-1 block">% ટકાવારી</label>
               <div className="bg-emerald-500 text-white font-black px-6 py-4 rounded-2xl text-center text-2xl sm:text-3xl font-mono border-2 border-emerald-600 shadow-xl shadow-emerald-100 transition-all">
-                {percentage ? `${percentage}%` : '0.00%'}
+                {percentage ? \`\${percentage}%\` : '0.00%'}
               </div>
             </div>
 
@@ -205,5 +101,8 @@ export default function CenterPanel() {
         </Form>
       </div>
     </motion.div>
-  );
-}
+  );`;
+
+content = content.replace(/  return \([\s\S]*?  \);\n\}/, newReturn + '\n}');
+
+fs.writeFileSync(filePath, content);
