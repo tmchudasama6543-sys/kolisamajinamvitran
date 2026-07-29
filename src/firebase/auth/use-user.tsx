@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useFirebase } from '@/firebase/provider';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDocFromServer } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
 export type AppUser = User & { 
@@ -22,9 +22,7 @@ let globalAppUser: AppUser | null = null;
 let globalUserLoading = true;
 
 /**
- * Expert Real-time User Hook.
- * Listens to the user profile document in Firestore and updates the UI instantly
- * when an Admin approves or revokes access.
+ * Expert Real-time User Hook with Cache Bypass & Instant Revoke/Approve Sync.
  */
 export function useUser(): UserHookResult {
   const { auth, firestore, isUserLoading } = useFirebase();
@@ -43,14 +41,14 @@ export function useUser(): UserHookResult {
     if (firebaseUser) {
       const emailLower = firebaseUser.email?.toLowerCase() || '';
 
-      // Reset global cache if user changed to prevent stale state bleed
+      // Reset global cache if user UID changed
       if (globalAppUser && globalAppUser.uid !== firebaseUser.uid) {
         globalAppUser = null;
         setAppUser(null);
         setLoading(true);
       }
 
-      // 1. Immediate check for Super Admin by Email (Hardcoded safety)
+      // 1. Immediate check for Super Admin by Email
       if (emailLower === ADMIN_EMAIL) {
         const adminUser: AppUser = { ...firebaseUser, role: 'admin', accessApproved: true };
         globalAppUser = adminUser;
@@ -70,10 +68,43 @@ export function useUser(): UserHookResult {
         return;
       }
 
-      // 2. Setup Real-time Synchronous Listener for the User's Profile Document
+      // 2. Fetch fresh live profile directly from server first (bypassing stale browser cache)
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-      
+
+      let isSubscribed = true;
+
+      getDocFromServer(userDocRef)
+        .then((serverSnap) => {
+          if (!isSubscribed) return;
+
+          let initialRole = 'data_entry';
+          let initialApproval = false;
+
+          if (serverSnap.exists()) {
+            const data = serverSnap.data();
+            initialRole = data.role || 'data_entry';
+            initialApproval = data.accessApproved !== undefined ? Boolean(data.accessApproved) : false;
+          }
+
+          const freshUser: AppUser = {
+            ...firebaseUser,
+            role: initialRole as any,
+            accessApproved: initialApproval,
+          };
+
+          globalAppUser = freshUser;
+          globalUserLoading = false;
+          setAppUser(freshUser);
+          setLoading(false);
+        })
+        .catch(() => {
+          // If server fetch fails (e.g. offline), continue with listener
+        });
+
+      // 3. Setup Real-time Listener for instant live updates (Revoke / Approve in real-time)
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (!isSubscribed) return;
+
         let finalUser: AppUser;
         if (docSnap.exists()) {
           const userData = docSnap.data();
@@ -86,7 +117,6 @@ export function useUser(): UserHookResult {
             accessApproved: finalApproval,
           };
         } else {
-          // Default fallback for new user doc creation
           finalUser = { ...firebaseUser, role: 'data_entry', accessApproved: false }; 
         }
 
@@ -96,14 +126,12 @@ export function useUser(): UserHookResult {
         setLoading(false);
       }, (error) => {
         console.error("Error listening to user details:", error);
-        const fallbackUser: AppUser = { ...firebaseUser, role: 'data_entry', accessApproved: false };
-        globalAppUser = fallbackUser;
-        globalUserLoading = false;
-        setAppUser(fallbackUser);
-        setLoading(false);
       });
 
-      return () => unsubscribe();
+      return () => {
+        isSubscribed = false;
+        unsubscribe();
+      };
     } else {
       globalAppUser = null;
       globalUserLoading = false;
