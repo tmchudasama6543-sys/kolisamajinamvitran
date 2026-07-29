@@ -29,26 +29,25 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
     setLoading(true);
     const cleanEmail = email.trim().toLowerCase();
 
-    // 0. Pre-check if email already exists in Firestore
+    // 0. Pre-check if email already exists in Firestore 'users' collection
     try {
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('email', '==', cleanEmail));
       const querySnap = await getDocs(q);
       if (!querySnap.empty) {
         const existingData = querySnap.docs[0].data();
-        if (existingData.role === 'admin') {
-          setInlineError('આ ઈમેલથી પહેલેથી જ એડમિન એકાઉન્ટ બનેલું છે!');
-        } else {
-          setInlineError('આ ઈમેલથી પહેલેથી જ ડેટા એન્ટ્રી ઓપરેટર એકાઉન્ટ બનેલું છે! એક જ ઈમેલ પર બે અલગ રોલ ન બની શકે.');
+        if (existingData.role === 'admin' && existingData.accessApproved === true) {
+          setInlineError('આ ઈમેલથી પહેલેથી જ સક્રિય એડમિન એકાઉન્ટ હાજર છે!');
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-        return;
       }
     } catch (e) {
-      // If query fails, proceed to API call
+      // Continue
     }
     
     try {
+      // 1. Attempt REST API signUp
       const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,39 +55,69 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       });
 
       const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Unknown Error');
+
+      if (response.ok) {
+        const newUserId = data.localId;
+        
+        await setDoc(doc(firestore, 'users', newUserId), {
+          email: cleanEmail,
+          role: 'admin',
+          dataEntryCenterId: null,
+          accessApproved: true
+        });
+        
+        await setDoc(doc(firestore, 'roles_admin', newUserId), {
+          email: cleanEmail,
+          createdAt: new Date().toISOString()
+        });
+        
+        setInlineSuccess(`નવું એડમિન એકાઉન્ટ (${cleanEmail}) સફળતાપૂર્વક બની ગયું છે!`);
+        setTimeout(() => onClose(), 1800);
+        return;
       }
-      
-      const newUserId = data.localId;
-      
-      // 1. Add user to 'users' collection as approved admin
-      await setDoc(doc(firestore, 'users', newUserId), {
-        email: cleanEmail,
-        role: 'admin',
-        dataEntryCenterId: null,
-        accessApproved: true
-      });
-      
-      // 2. Add user to 'roles_admin' collection
-      await setDoc(doc(firestore, 'roles_admin', newUserId), {
-        email: cleanEmail,
-        createdAt: new Date().toISOString()
-      });
-      
-      setInlineSuccess(`નવું એડમિન એકાઉન્ટ (${cleanEmail}) સફળતાપૂર્વક બની ગયું છે!`);
-      setTimeout(() => {
-        onClose();
-      }, 1800);
+
+      // 2. If EMAIL_EXISTS in Firebase Auth, attempt signInWithPassword to get UID & restore Firestore docs
+      if (data.error?.message?.includes('EMAIL_EXISTS')) {
+        const loginRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail, password, returnSecureToken: true })
+        });
+
+        const loginData = await loginRes.json();
+
+        if (loginRes.ok) {
+          const existingUserId = loginData.localId;
+
+          // Re-create/Update Firestore documents as approved Admin
+          await setDoc(doc(firestore, 'users', existingUserId), {
+            email: cleanEmail,
+            role: 'admin',
+            dataEntryCenterId: null,
+            accessApproved: true
+          });
+
+          await setDoc(doc(firestore, 'roles_admin', existingUserId), {
+            email: cleanEmail,
+            createdAt: new Date().toISOString()
+          });
+
+          setInlineSuccess(`આ ઈમેલ રજીસ્ટર હતો, તેનો એડમિન એક્સેસ સફળતાપૂર્વક સક્રિય (Activated) કરી દીધો છે!`);
+          setTimeout(() => onClose(), 1800);
+          return;
+        } else {
+          setInlineError('આ ઈમેલ ફાયરબેઝમાં પહેલેથી હાજર છે! જો આ તમારો ઈમેલ હોય તો સાચો પાસવર્ડ નાખીને સેવ કરો.');
+          return;
+        }
+      }
+
+      throw new Error(data.error?.message || 'Unknown Error');
     } catch (error: any) {
       let errorMsg = error.message;
-      if (errorMsg.includes('EMAIL_EXISTS')) {
-        errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે! કૃપા કરીને બીજો નવો ઈમેલ દાખલ કરો.';
-      } else if (errorMsg.includes('WEAK_PASSWORD')) {
+      if (errorMsg.includes('WEAK_PASSWORD')) {
         errorMsg = 'પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.';
       } else if (errorMsg.includes('PERMISSION_DENIED')) {
-        errorMsg = 'Firebase Rules ના લીધે એક્સેસ મંજૂર નથી થઈ રહ્યો. કૃપા કરીને ડેટાબેઝ રૂલ્સ તપાસો.';
+        errorMsg = 'Firebase Rules ના લીધે એક્સેસ મંજૂર નથી થઈ રહ્યો.';
       } else {
         errorMsg = `ભૂલ આવી: ${errorMsg}`;
       }
@@ -129,7 +158,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
           )}
 
           <div className="space-y-2">
-            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">નવું એડમિન ઈમેલ</Label>
+            <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">એડમિન ઈમેલ</Label>
             <Input 
               type="email" 
               placeholder="admin@email.com" 
@@ -163,7 +192,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
             disabled={loading || !!inlineSuccess} 
             className="w-full h-14 mt-4 rounded-xl font-black text-lg shadow-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white transition-all"
           >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એડમિન એકાઉન્ટ બનાવો'}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એડમિન એકાઉન્ટ બનાવો / એક્ટિવ કરો'}
           </Button>
         </form>
       </div>
