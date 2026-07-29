@@ -28,24 +28,18 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
     
     setLoading(true);
     
+    // Initialize a temporary secondary app to create a user without logging out the admin
+    const tempAppName = 'TempApp_' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+    
     try {
-      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, returnSecureToken: true })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Error creating user');
-      }
-      
-      const newUserId = data.localId;
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+      const newUserId = userCredential.user.uid;
       
       // Add user to users collection (Auto-approved because Admin is creating it)
       await setDoc(doc(firestore, 'users', newUserId), {
-        email: email,
+        email: email.toLowerCase(),
         role: role,
         dataEntryCenterId: null,
         accessApproved: true
@@ -53,7 +47,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       
       if (role === 'admin') {
         await setDoc(doc(firestore, 'roles_admin', newUserId), {
-          email: email,
+          email: email.toLowerCase(),
           createdAt: new Date().toISOString()
         });
       }
@@ -62,10 +56,11 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
       onClose();
     } catch (error: any) {
       let errorMsg = error.message;
-      if (errorMsg.includes('EMAIL_EXISTS')) errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
-      if (errorMsg.includes('WEAK_PASSWORD')) errorMsg = 'પાસવર્ડ ખૂબ નબળો છે.';
+      if (error.code === 'auth/email-already-in-use') errorMsg = 'આ ઈમેલથી પહેલેથી જ એકાઉન્ટ બનેલું છે.';
+      if (error.code === 'auth/weak-password') errorMsg = 'પાસવર્ડ ઓછામાં ઓછો 6 અક્ષરનો હોવો જોઈએ.';
       toast({ variant: 'destructive', title: 'એકાઉન્ટ બનાવવામાં ભૂલ', description: errorMsg });
     } finally {
+      await deleteApp(tempApp);
       setLoading(false);
     }
   };
