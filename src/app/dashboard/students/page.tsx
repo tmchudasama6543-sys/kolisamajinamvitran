@@ -228,20 +228,12 @@ export default function StudentsListPage() {
 
   const triggerEditCamera = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
     const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      setPhotoLoading(prev => ({ ...prev, [field]: true }));
-      try { (window as any).AppInventor.setWebViewString(`camera_${fKey}`); } catch (_) {}
-      return; 
-    }
     const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
     document.getElementById(`${uid}-${prefix}-${fKey}-cam`)?.click();
   };
 
   const triggerEditGallery = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
     const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`gallery_${fKey}`); } catch (_) {}
-    }
     const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
     document.getElementById(`${uid}-${prefix}-${fKey}-gal`)?.click();
   };
