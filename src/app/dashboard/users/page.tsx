@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, ShieldCheck, Lock, Unlock, UserCheck, UserX, Users, UserCircle, PlusCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, Lock, Unlock, UserCheck, UserX, Users, UserCircle, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
@@ -35,6 +35,7 @@ export default function UsersPage() {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [userToApprove, setUserToApprove] = useState<UserProfile | null>(null);
   const [userToRevoke, setUserToRevoke] = useState<UserProfile | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
@@ -47,6 +48,23 @@ export default function UsersPage() {
       toast({ title: status ? "મંજૂરી આપી દીધી!" : "એક્સેસ રદ કર્યો!", variant: status ? "default" : "destructive" });
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'ભૂલ', description: e.message });
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const handleDeleteUser = async (user: UserProfile) => {
+    setIsProcessing(user.id);
+    try {
+      // Delete from 'users' collection
+      await deleteDoc(doc(firestore, 'users', user.id));
+      // Delete from 'roles_admin' collection if exists
+      if (user.role === 'admin') {
+        await deleteDoc(doc(firestore, 'roles_admin', user.id)).catch(() => {});
+      }
+      toast({ title: "સફળતા", description: `"${user.email}" નો રેકોર્ડ ડેટાબેઝમાંથી સફળતાપૂર્વક ડીલીટ કરી દીધો છે.` });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'ડીલીટ કરવામાં ભૂલ', description: e.message });
     } finally {
       setIsProcessing(null);
     }
@@ -89,14 +107,14 @@ export default function UsersPage() {
           )}
         </TableCell>
         <TableCell className="p-6 text-right">
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-2 sm:gap-3">
             {!isApproved ? (
               <Button 
                 onClick={() => setUserToApprove(user)} 
                 disabled={isProcessing === user.id} 
-                className="h-12 px-6 rounded-xl font-black bg-[#059669] shadow-md hover:scale-105 transition-all text-xs"
+                className="h-11 px-4 sm:px-6 rounded-xl font-black bg-[#059669] shadow-md hover:scale-105 transition-all text-xs"
               >
-                {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />} Approve (મંજૂર કરો)
+                {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-1.5" />} Approve
               </Button>
             ) : (
               !isMasterAdmin && (
@@ -104,11 +122,23 @@ export default function UsersPage() {
                   onClick={() => setUserToRevoke(user)} 
                   variant="outline" 
                   disabled={isProcessing === user.id} 
-                  className="h-12 px-6 rounded-xl font-black text-rose-600 border-2 hover:bg-rose-50 transition-all text-xs"
+                  className="h-11 px-4 sm:px-6 rounded-xl font-black text-amber-600 border-2 border-amber-200 hover:bg-amber-50 transition-all text-xs"
                 >
-                  {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4 mr-2" />} Revoke (રદ કરો)
+                  {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4 mr-1.5" />} Revoke
                 </Button>
               )
+            )}
+
+            {!isMasterAdmin && (
+              <Button 
+                onClick={() => setUserToDelete(user)} 
+                variant="outline"
+                disabled={isProcessing === user.id} 
+                className="h-11 px-3 sm:px-4 rounded-xl font-black text-rose-600 border-2 border-rose-200 hover:bg-rose-50 transition-all text-xs"
+                title="ડેટાબેઝમાંથી ડીલીટ કરો"
+              >
+                <Trash2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">ડીલીટ</span>
+              </Button>
             )}
           </div>
         </TableCell>
@@ -249,8 +279,8 @@ export default function UsersPage() {
       {userToRevoke && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setUserToRevoke(null)} />
-          <div className="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10 flex flex-col p-8 sm:p-10 border-t-8 border-rose-600">
-            <div className="text-2xl font-black text-rose-600 uppercase tracking-tighter mb-4 flex items-center gap-2">
+          <div className="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10 flex flex-col p-8 sm:p-10 border-t-8 border-amber-500">
+            <div className="text-2xl font-black text-amber-600 uppercase tracking-tighter mb-4 flex items-center gap-2">
               <UserX className="h-6 w-6" /> એક્સેસ રદ (Revoke)
             </div>
             <p className="text-lg font-bold text-slate-800 leading-relaxed mb-8">
@@ -264,9 +294,37 @@ export default function UsersPage() {
                   setUserToRevoke(null);
                   await handleUpdateAccess(uid, false);
                 }} 
-                className="h-14 rounded-xl font-black bg-rose-600 text-white flex-1 flex items-center justify-center shadow-lg"
+                className="h-14 rounded-xl font-black bg-amber-500 text-white flex-1 flex items-center justify-center shadow-lg"
               >
                 હા, એક્સેસ હટાવો
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setUserToDelete(null)} />
+          <div className="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10 flex flex-col p-8 sm:p-10 border-t-8 border-rose-600">
+            <div className="text-2xl font-black text-rose-600 uppercase tracking-tighter mb-4 flex items-center gap-2">
+              <Trash2 className="h-6 w-6" /> એકાઉન્ટ કાયમી ડીલીટ (Delete)
+            </div>
+            <p className="text-lg font-bold text-slate-800 leading-relaxed mb-8">
+              શું તમે ખરેખર "{userToDelete.email}" નો રેકોર્ડ ડેટાબેઝમાંથી કાયમ માટે ડીલીટ કરવા માંગો છો?
+            </p>
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => setUserToDelete(null)} className="h-14 rounded-xl font-black flex-1 border-2">રદ કરો</Button>
+              <Button 
+                onClick={async () => {
+                  const u = userToDelete;
+                  setUserToDelete(null);
+                  await handleDeleteUser(u);
+                }} 
+                className="h-14 rounded-xl font-black bg-rose-600 text-white flex-1 flex items-center justify-center shadow-lg"
+              >
+                હા, કાયમી ડીલીટ કરો
               </Button>
             </div>
           </div>
