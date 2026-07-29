@@ -904,10 +904,10 @@ export default function StudentsListPage() {
       )}
 
       <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
-        <AlertDialogContent className="rounded-[2rem] p-8">
+        <AlertDialogContent className="rounded-[2rem] p-6 sm:p-8 w-[95vw] sm:max-w-md">
           <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black text-primary">ટ્રેશમાં ખસેડવા માંગો છો?</AlertDialogTitle><AlertDialogDescription className="text-lg font-bold">વિદ્યાર્થી <span className="text-rose-500 font-black">"{studentToDelete?.name}"</span> ને લિસ્ટમાંથી હટાવીને ટ્રેશ (કચરાપેટી) માં મોકલવામાં આવશે.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-3">
-            <AlertDialogCancel className="h-14 rounded-xl border-2 font-black text-lg">ના, રહેવા દો</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6 flex flex-col sm:flex-row gap-3">
+            <AlertDialogCancel className="h-14 w-full sm:w-auto rounded-xl border-2 font-black text-lg m-0">ના, રહેવા દો</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               if (!studentToDelete) return;
               const student = studentToDelete;
@@ -920,17 +920,17 @@ export default function StudentsListPage() {
                 .catch((error: any) => {
                   toast({ variant: 'destructive', title: 'ભૂલ', description: 'ખસેડવામાં ભૂલ આવી: ' + error.message });
                 });
-            }} className="h-14 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-lg">હા, ટ્રેશ કરો</AlertDialogAction>
+            }} className="h-14 w-full sm:w-auto rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-lg m-0">હા, ટ્રેશ કરો</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={showBulkTrashConfirm} onOpenChange={setShowBulkTrashConfirm}>
-        <AlertDialogContent className="rounded-[2rem] p-8">
+        <AlertDialogContent className="rounded-[2rem] p-6 sm:p-8 w-[95vw] sm:max-w-md">
           <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black text-primary">બલ્ક ટ્રેશ કન્ફર્મ કરો</AlertDialogTitle><AlertDialogDescription className="text-lg font-bold">તમે પસંદ કરેલા <span className="text-rose-500 font-black">{selectedIds.size}</span> વિદ્યાર્થીઓને ટ્રેશમાં ખસેડવા માંગો છો?</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-3">
-            <AlertDialogCancel className="h-14 rounded-xl border-2 font-black text-lg">ના</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkTrash} className="h-14 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-lg">હા, બધાને ટ્રેશ કરો</AlertDialogAction>
+          <AlertDialogFooter className="mt-6 flex flex-col sm:flex-row gap-3">
+            <AlertDialogCancel className="h-14 w-full sm:w-auto rounded-xl border-2 font-black text-lg m-0">ના</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkTrash} className="h-14 w-full sm:w-auto rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-lg m-0">હા, બધાને ટ્રેશ કરો</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

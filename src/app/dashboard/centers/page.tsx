@@ -83,7 +83,7 @@ export default function CentersPage() {
   }
 
   return (
-    <div className="p-4 sm:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-10 overflow-visible w-full px-2 sm:px-4">
+    <div className="p-4 sm:p-10 max-w-7xl mx-auto space-y-4 sm:space-y-6 overflow-visible w-full px-2 sm:px-4">
       <div className="pb-8 border-b-2 border-primary/10">
         <h1 className="text-2xl sm:text-4xl font-black text-primary tracking-tighter flex items-center gap-3 py-2 leading-tight">
           <Building className="h-10 w-10" />
@@ -94,15 +94,15 @@ export default function CentersPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10 items-start w-full">
         <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden bg-white w-full">
-          <CardHeader className="bg-muted/5 p-4 sm:p-8 border-b">
+          <CardHeader className="bg-muted/5 p-4 sm:p-6 border-b">
             <CardTitle className="text-xl font-black text-primary flex items-center gap-2">
               <Plus className="h-5 w-5" />
               નવું સેન્ટર ઉમેરો
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-8">
+          <CardContent className="p-4 sm:p-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-black text-xs uppercase tracking-widest text-muted-foreground">સેન્ટરનું નામ</FormLabel>
@@ -117,7 +117,7 @@ export default function CentersPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg shadow-xl">
+                <Button type="submit" disabled={isSubmitting} className="w-full h-12 mt-2 rounded-2xl font-black text-base shadow-xl">
                   {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   સેન્ટર બનાવો
                 </Button>
@@ -127,10 +127,10 @@ export default function CentersPage() {
         </Card>
 
         <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden bg-white w-full">
-          <CardHeader className="bg-muted/5 p-4 sm:p-8 border-b">
+          <CardHeader className="bg-muted/5 p-4 sm:p-6 border-b">
             <CardTitle className="text-xl font-black text-primary">નોંધાયેલા કેન્દ્રો</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-8">
+          <CardContent className="p-4 sm:p-6">
               <div className="space-y-4">
                   {isLoading ? (
                       Array.from({ length: 3 }).map((_, i) => (
