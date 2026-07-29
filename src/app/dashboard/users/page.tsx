@@ -6,24 +6,12 @@ import { collection, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, ShieldCheck, Lock, Unlock, UserCheck, UserX, Users } from 'lucide-react';
+import { Loader2, ShieldCheck, Lock, Unlock, UserCheck, UserX, Users, UserCircle, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import CreateUserModal from '@/components/CreateUserModal';
-import { PlusCircle } from 'lucide-react';
 
 type UserProfile = {
   id: string;
@@ -37,6 +25,7 @@ export default function UsersPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+
   useEffect(() => {
     if (!adminLoading && adminUser?.role !== 'admin') {
       router.replace('/dashboard');
@@ -66,13 +55,20 @@ export default function UsersPage() {
   if (adminLoading || !adminUser) return <div className="p-10"><Skeleton className="h-[70vh] w-full rounded-3xl" /></div>;
   if (adminUser.role !== 'admin') return null;
 
-  const dataEntryUsers = users?.filter(u => u.role === 'data_entry') || [];
-  const pending = dataEntryUsers.filter(u => !u.accessApproved);
-  const approved = dataEntryUsers.filter(u => u.accessApproved);
-  const admins = users?.filter(u => u.role === 'admin') || [];
+  // Categorize users strictly:
+  // 1. Pending or Revoked (accessApproved is false or undefined)
+  const pendingOrRevoked = users?.filter(u => u.accessApproved === false || u.accessApproved === undefined) || [];
+  
+  // 2. Active Admins (role === 'admin' AND accessApproved === true)
+  const activeAdmins = users?.filter(u => u.role === 'admin' && u.accessApproved === true) || [];
+  
+  // 3. Active Operators (role === 'data_entry' AND accessApproved === true)
+  const activeOperators = users?.filter(u => u.role === 'data_entry' && u.accessApproved === true) || [];
 
   const UserRow = ({ user }: { user: UserProfile }) => {
-    const isMasterAdmin = user.email === 'jayhind6543@gmail.com';
+    const isMasterAdmin = user.email.toLowerCase() === 'jayhind6543@gmail.com';
+    const isApproved = user.accessApproved === true;
+
     return (
       <TableRow key={user.id} className="hover:bg-slate-50 border-b last:border-none transition-all">
         <TableCell className="p-6">
@@ -81,24 +77,37 @@ export default function UsersPage() {
             {user.role === 'admin' ? (
               <Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border-none mt-1">ADMINISTRATOR</Badge>
             ) : (
-              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest bg-slate-100 border-none mt-1">DATA ENTRY</Badge>
+              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border-none mt-1">DATA ENTRY</Badge>
             )}
           </div>
         </TableCell>
         <TableCell>
-          {user.accessApproved ? (
+          {isApproved ? (
             <Badge className="bg-[#D1FAE5] text-[#059669] hover:bg-[#D1FAE5] border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Unlock className="h-3 w-3" /> ACTIVE</Badge>
           ) : (
-            <Badge className="bg-rose-50 text-rose-600 hover:bg-rose-50 border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Lock className="h-3 w-3" /> LOCKED</Badge>
+            <Badge className="bg-rose-50 text-rose-600 hover:bg-rose-50 border-none px-4 py-1 font-black text-[10px] uppercase flex items-center gap-2 w-fit"><Lock className="h-3 w-3" /> LOCKED / REVOKED</Badge>
           )}
         </TableCell>
         <TableCell className="p-6 text-right">
           <div className="flex justify-end gap-3">
-            {!user.accessApproved ? (
-              <Button onClick={() => setUserToApprove(user)} disabled={isProcessing === user.id} className="h-12 px-6 rounded-xl font-black bg-[#059669] shadow-md hover:scale-105 transition-all text-xs">{isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />} Approve</Button>
+            {!isApproved ? (
+              <Button 
+                onClick={() => setUserToApprove(user)} 
+                disabled={isProcessing === user.id} 
+                className="h-12 px-6 rounded-xl font-black bg-[#059669] shadow-md hover:scale-105 transition-all text-xs"
+              >
+                {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />} Approve (મંજૂર કરો)
+              </Button>
             ) : (
               !isMasterAdmin && (
-                <Button onClick={() => setUserToRevoke(user)} variant="outline" disabled={isProcessing === user.id} className="h-12 px-6 rounded-xl font-black text-rose-600 border-2 hover:bg-rose-50 transition-all text-xs">{isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4 mr-2" />} Revoke</Button>
+                <Button 
+                  onClick={() => setUserToRevoke(user)} 
+                  variant="outline" 
+                  disabled={isProcessing === user.id} 
+                  className="h-12 px-6 rounded-xl font-black text-rose-600 border-2 hover:bg-rose-50 transition-all text-xs"
+                >
+                  {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4 mr-2" />} Revoke (રદ કરો)
+                </Button>
               )
             )}
           </div>
@@ -114,46 +123,110 @@ export default function UsersPage() {
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#0D9488] tracking-tighter flex items-center gap-3 py-2 leading-tight">
             <ShieldCheck className="h-8 w-8 sm:h-10 sm:w-10 shrink-0" /> યુઝર કંટ્રોલ સેન્ટર
           </h1>
-          <p className="text-slate-400 font-bold mt-2 uppercase text-xs tracking-widest">એડમિન કંટ્રોલ: ઓપરેટર મંજૂરી અને સિક્યોરિટી</p>
+          <p className="text-slate-400 font-bold mt-2 uppercase text-xs tracking-widest">એડમિન અને ઓપરેટર એકાઉન્ટ મંજૂરી તથા સિક્યોરિટી</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="h-12 px-6 rounded-2xl font-black shadow-lg hover:scale-105 transition-all text-sm gap-2">
-          <PlusCircle className="h-5 w-5" /> નવું એકાઉન્ટ બનાવો
+        <Button onClick={() => setShowCreateModal(true)} className="h-12 px-6 rounded-2xl font-black shadow-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white hover:scale-105 transition-all text-sm gap-2">
+          <PlusCircle className="h-5 w-5" /> નવું એડમિન બનાવો
         </Button>
       </div>
 
+      {/* Section 1: Pending & Revoked Accounts */}
       <section className="space-y-6">
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 px-2"><Users className="h-5 w-5 text-slate-400" /> પેન્ડિંગ મંજૂરી (Waiting)</h2>
-        <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-amber-400">
-          <CardContent className="p-0 overflow-x-auto"><Table><TableHeader className="bg-slate-50"><TableRow><TableHead className="p-6 font-black text-[#0D9488]">પ્રોફાઇલ</TableHead><TableHead className="font-black text-[#0D9488]">સ્ટેટસ</TableHead><TableHead className="text-right p-6 font-black text-[#0D9488]">એક્શન</TableHead></TableRow></TableHeader>
-          <TableBody>{usersLoading ? <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow> : pending.length > 0 ? pending.map(u => <UserRow key={u.id} user={u} />) : <TableRow><TableCell colSpan={3} className="p-20 text-center font-black italic text-slate-300">કોઈ નવી રજીસ્ટ્રેશન નથી.</TableCell></TableRow>}</TableBody></Table></CardContent>
+        <h2 className="text-xl font-black text-rose-600 uppercase tracking-tight flex items-center gap-2 px-2">
+          <Lock className="h-5 w-5 text-rose-600" /> પેન્ડિંગ અને રદ કરેલ એકાઉન્ટ્સ (Waiting & Revoked)
+        </h2>
+        <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-rose-500">
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-rose-50/50">
+                <TableRow>
+                  <TableHead className="p-6 font-black text-rose-700">પ્રોફાઇલ</TableHead>
+                  <TableHead className="font-black text-rose-700">સ્ટેટસ</TableHead>
+                  <TableHead className="text-right p-6 font-black text-rose-700">એક્શન</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersLoading ? (
+                  <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow>
+                ) : pendingOrRevoked.length > 0 ? (
+                  pendingOrRevoked.map(u => <UserRow key={u.id} user={u} />)
+                ) : (
+                  <TableRow><TableCell colSpan={3} className="p-16 text-center font-black italic text-slate-300">કોઈ પેન્ડિંગ કે રદ કરેલું એકાઉન્ટ નથી.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
         </Card>
       </section>
 
+      {/* Section 2: Active Administrators */}
       <section className="space-y-6">
-        <h2 className="text-xl font-black text-[#059669] uppercase tracking-tight flex items-center gap-2 px-2"><UserCheck className="h-5 w-5" /> મંજૂર થયેલ ઓપરેટર્સ (Active)</h2>
-        <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-[#059669]">
-          <CardContent className="p-0 overflow-x-auto"><Table><TableHeader className="bg-[#F0FDFA]"><TableRow><TableHead className="p-6 font-black text-[#059669]">પ્રોફાઇલ</TableHead><TableHead className="font-black text-[#059669]">સ્ટેટસ</TableHead><TableHead className="text-right p-6 font-black text-[#059669]">એક્શન</TableHead></TableRow></TableHeader>
-          <TableBody>{usersLoading ? <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow> : approved.length > 0 ? approved.map(u => <UserRow key={u.id} user={u} />) : <TableRow><TableCell colSpan={3} className="p-20 text-center font-black italic text-slate-300">હજુ સુધી કોઈ મંજૂરી આપી નથી.</TableCell></TableRow>}</TableBody></Table></CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-6">
-        <h2 className="text-xl font-black text-[#4F46E5] uppercase tracking-tight flex items-center gap-2 px-2"><ShieldCheck className="h-5 w-5" /> એડમિનિસ્ટ્રેટર્સ (Admins)</h2>
+        <h2 className="text-xl font-black text-[#4F46E5] uppercase tracking-tight flex items-center gap-2 px-2">
+          <ShieldCheck className="h-5 w-5 text-[#4F46E5]" /> સક્રિય એડમિનિસ્ટ્રેટર્સ (Active Admins)
+        </h2>
         <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-[#4F46E5]">
-          <CardContent className="p-0 overflow-x-auto"><Table><TableHeader className="bg-indigo-50"><TableRow><TableHead className="p-6 font-black text-[#4F46E5]">પ્રોફાઇલ</TableHead><TableHead className="font-black text-[#4F46E5]">સ્ટેટસ</TableHead><TableHead className="text-right p-6 font-black text-[#4F46E5]">એક્શન</TableHead></TableRow></TableHeader>
-          <TableBody>{usersLoading ? <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow> : admins.length > 0 ? admins.map(u => <UserRow key={u.id} user={u} />) : <TableRow><TableCell colSpan={3} className="p-20 text-center font-black italic text-slate-300">કોઈ એડમિન નથી.</TableCell></TableRow>}</TableBody></Table></CardContent>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-indigo-50">
+                <TableRow>
+                  <TableHead className="p-6 font-black text-[#4F46E5]">પ્રોફાઇલ</TableHead>
+                  <TableHead className="font-black text-[#4F46E5]">સ્ટેટસ</TableHead>
+                  <TableHead className="text-right p-6 font-black text-[#4F46E5]">એક્શન</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersLoading ? (
+                  <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow>
+                ) : activeAdmins.length > 0 ? (
+                  activeAdmins.map(u => <UserRow key={u.id} user={u} />)
+                ) : (
+                  <TableRow><TableCell colSpan={3} className="p-16 text-center font-black italic text-slate-300">કોઈ સક્રિય એડમિન નથી.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
         </Card>
       </section>
 
+      {/* Section 3: Active Data Entry Operators */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-black text-[#059669] uppercase tracking-tight flex items-center gap-2 px-2">
+          <UserCircle className="h-5 w-5 text-[#059669]" /> સક્રિય ઓપરેટર્સ (Active Operators)
+        </h2>
+        <Card className="shadow-2xl border-none rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden bg-white border-l-8 border-[#059669]">
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-[#F0FDFA]">
+                <TableRow>
+                  <TableHead className="p-6 font-black text-[#059669]">પ્રોફાઇલ</TableHead>
+                  <TableHead className="font-black text-[#059669]">સ્ટેટસ</TableHead>
+                  <TableHead className="text-right p-6 font-black text-[#059669]">એક્શન</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersLoading ? (
+                  <TableRow><TableCell colSpan={3} className="p-10"><Skeleton className="h-12 w-full" /></TableCell></TableRow>
+                ) : activeOperators.length > 0 ? (
+                  activeOperators.map(u => <UserRow key={u.id} user={u} />)
+                ) : (
+                  <TableRow><TableCell colSpan={3} className="p-16 text-center font-black italic text-slate-300">કોઈ સક્રિય ઓપરેટર નથી.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Approve Confirmation Modal */}
       {userToApprove && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setUserToApprove(null)} />
           <div className="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10 flex flex-col p-8 sm:p-10 border-t-8 border-[#059669]">
             <div className="text-2xl font-black text-[#059669] uppercase tracking-tighter mb-4 flex items-center gap-2">
-              <UserCheck className="h-6 w-6" /> એક્સેસ મંજૂરી
+              <UserCheck className="h-6 w-6" /> એક્સેસ મંજૂરી (Approve)
             </div>
             <p className="text-lg font-bold text-slate-800 leading-relaxed mb-8">
-              શું તમે ખરેખર "{userToApprove.email}" ને એક્સેસ આપવા માંગો છો?
+              શું તમે ખરેખર "{userToApprove.email}" ને ફરીથી એક્સેસ આપવા માંગો છો?
             </p>
             <div className="flex gap-4">
               <Button variant="outline" onClick={() => setUserToApprove(null)} className="h-14 rounded-xl font-black flex-1 border-2">રદ કરો</Button>
@@ -172,12 +245,13 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Revoke Confirmation Modal */}
       {userToRevoke && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setUserToRevoke(null)} />
           <div className="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10 flex flex-col p-8 sm:p-10 border-t-8 border-rose-600">
             <div className="text-2xl font-black text-rose-600 uppercase tracking-tighter mb-4 flex items-center gap-2">
-              <UserX className="h-6 w-6" /> એક્સેસ રદ
+              <UserX className="h-6 w-6" /> એક્સેસ રદ (Revoke)
             </div>
             <p className="text-lg font-bold text-slate-800 leading-relaxed mb-8">
               શું તમે ખરેખર "{userToRevoke.email}" નો એક્સેસ રદ કરવા માંગો છો?
