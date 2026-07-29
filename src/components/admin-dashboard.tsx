@@ -7,7 +7,7 @@ import {
   ZoomIn, ZoomOut, Download, RefreshCw, X
 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Skeleton } from './ui/skeleton';
 import { Badge } from './ui/badge';
@@ -93,7 +93,7 @@ export default function AdminPanel() {
   };
 
   const studentsQuery = useMemoFirebase(
-    () => query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc')),
+    () => query(collection(firestore, 'students'), orderBy('submissionDateTime', 'desc'), limit(5000)),
     [firestore]
   );
   const { data: students, isLoading } = useCollection<StudentData>(studentsQuery);
