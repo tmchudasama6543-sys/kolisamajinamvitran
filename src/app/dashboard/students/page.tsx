@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useFirestore, useCollection, useMemoFirebase, updateStudentWithPhotosNonBlocking, moveDocumentToTrash, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, updateStudentNonBlocking, moveDocumentToTrash, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc, limit, writeBatch, getDoc, deleteField } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Users, Trash2, MapPin, Edit3, Save, Loader2, Camera, X, Phone, Copy, Eye, FileDown, CheckSquare, AlertTriangle, ZoomIn, ZoomOut, RefreshCw, Download, ArrowLeft, Image } from 'lucide-react';
+import { Search, Users, Trash2, MapPin, Edit3, Save, Loader2, X, Phone, Copy, FileDown, CheckSquare, AlertTriangle, RefreshCw, Download, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback, useRef, useId } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
@@ -502,7 +502,7 @@ export default function StudentsListPage() {
       const { marksheetPhotoBase64, aadhaarPhotoBase64, ...studentTextData } = editingStudent;
       const studentData = { ...studentTextData, percentage: updatedPercentage };
       const photoData = { marksheetPhotoBase64: marksheetPhotoBase64 || "", aadhaarPhotoBase64: aadhaarPhotoBase64 || "" };
-      updateStudentWithPhotosNonBlocking(firestore, editingStudent.id, studentData, photoData).catch(err => {
+      updateStudentNonBlocking(firestore, editingStudent.id, studentData, photoData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડેટાબેઝ અપડેટ નિષ્ફળ: ' + err.message });
       });
       toast({ title: "સફળ!", description: "માહિતી અપડેટ થઈ ગઈ." });
@@ -623,25 +623,15 @@ export default function StudentsListPage() {
        toast({ variant: 'destructive', title: 'ભૂલ', description: 'ડાઉનલોડ કરવા માટે કોઈ ડેટા નથી.' });
        return;
     }
-    const data = filteredStudents.map((s, index) => {
-      const pct = typeof s.percentage === 'number' ? s.percentage : parseFloat((s.percentage as any) || '0');
-      return {
-        'ક્રમ (Rank)': index + 1,
-        'વિદ્યાર્થીનું નામ (Student Name)': s.name,
-        'ધોરણ (Standard)': s.standard,
-        'ગામનું નામ (Village Name)': s.villageName,
-        'ટકાવારી (Percentage)': `${pct.toFixed(2)}%`,
-        'મેળવેલ ગુણ (Obtained Marks)': s.obtainedMarks || 0,
-        'કુલ ગુણ (Total Marks)': s.totalMarks || 0,
-        'મોબાઈલ નંબર (Mobile Number)': s.mobileNumber
-      };
-    });
+    const { topRankers, remaining } = generateRankedStudents();
+    const data = [...topRankers, ...remaining];
+    
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "All Students");
     XLSX.writeFile(workbook, `All_Students_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
     toast({ title: 'સફળ!', description: 'તમામ વિદ્યાર્થીઓની ફાઇલ ડાઉનલોડ થઈ ગઈ છે.' });
-  }, [filteredStudents, toast]);
+  }, [filteredStudents, generateRankedStudents, toast]);
 
   if (userLoading) return <div className="p-10"><Skeleton className="h-[70vh] w-full rounded-3xl" /></div>;
   if (!user || user.role !== 'admin') return null;

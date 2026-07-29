@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCw, Camera, Lock, CheckCircle2, Save, Image, Trash2, Eye, X, ZoomIn, ZoomOut, Download } from 'lucide-react';
-import { CameraModal } from '@/components/CameraModal';
-import { useUser, useFirebase, saveStudentWithPhotosNonBlocking } from '@/firebase';
+import { Loader2, Lock, CheckCircle2, Save } from 'lucide-react';
+import { useUser, useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { serverTimestamp } from 'firebase/firestore';
@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'motion/react';
-import { compressImageToBase64, compressDataUrl } from '@/lib/image';
 
 const gujaratiRegex = /^[\u0A80-\u0AFF\s\.\(\)\-]+$/;
 
@@ -41,12 +40,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-function normalizeBase64(data: string): string {
-  if (!data) return data;
-  const cleanData = data.replace(/[\r\n\s]+/g, '');
-  return cleanData.startsWith('data:') ? cleanData : `data:image/jpeg;base64,${cleanData}`;
-}
-
 export default function CenterPanel() {
   const { user } = useUser();
   const { firestore, auth } = useFirebase();
@@ -56,138 +49,7 @@ export default function CenterPanel() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [photos, setPhotos] = useState<{ marksheet: string | null; aadhar: string | null }>({ marksheet: null, aadhar: null });
-  const [compressing, setCompressing] = useState<{ marksheet: boolean; aadhar: boolean }>({ marksheet: false, aadhar: false });
   const [percentage, setPercentage] = useState<string>('');
-  const [cameraTarget, setCameraTarget] = useState<'marksheet' | 'aadhar' | null>(null);
-
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const dragOrigin = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    (window as any).handleNativeImage = (field: 'marksheet' | 'aadhar', base64: string) => {
-      if (!base64) return;
-      setCompressing(p => ({ ...p, [field]: false }));
-      setPhotos(p => ({ ...p, [field]: normalizeBase64(base64) }));
-    };
-    return () => { delete (window as any).handleNativeImage; };
-  }, []);
-
-  const triggerCamera = useCallback(async (field: 'marksheet' | 'aadhar') => {
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      setCompressing(p => ({ ...p, [field]: true }));
-      try { (window as any).AppInventor.setWebViewString(`camera_${field}`); } catch (_) {}
-      return;
-    }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      toast({ variant: 'destructive', title: 'Camera ઉપલબ્ધ નથી', description: 'આ device પર camera support નથી.' });
-      return;
-    }
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const hasCamera = devices.some(d => d.kind === 'videoinput');
-      if (!hasCamera) {
-        toast({ variant: 'destructive', title: 'Camera મળ્યો નહીં', description: 'Device સાથે camera જોડાયેલ નથી.' });
-        return;
-      }
-    } catch (_) {
-    }
-    setCameraTarget(field);
-  }, [toast]);
-
-  const triggerGallery = useCallback((field: 'marksheet' | 'aadhar') => {
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`gallery_${field}`); } catch (_) {}
-    }
-    document.getElementById(`${uid}-${field}-gal`)?.click();
-  }, [uid]);
-
-  const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, field: 'marksheet' | 'aadhar') => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    
-    setCompressing(p => ({ ...p, [field]: true }));
-    
-    try {
-      const base64data = await compressImageToBase64(file, { maxWidth: 800, quality: 0.5 });
-      setPhotos(p => ({ ...p, [field]: base64data }));
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'ભૂલ', description: 'ફોટો લોડ કરવામાં ભૂલ: ' + (err?.message || '') });
-    } finally {
-      setCompressing(p => ({ ...p, [field]: false }));
-    }
-  }, [toast]);
-
-  const openPreview = (src: string) => { 
-    setPreviewSrc(src); 
-    setZoom(1); 
-    setPan({ x: 0, y: 0 }); 
-    window.location.hash = 'preview';
-  };
-
-  const closePreview = () => { 
-    setPreviewSrc(null); 
-    setZoom(1); 
-    setPan({ x: 0, y: 0 }); 
-    if (window.location.hash.includes('preview')) window.history.back();
-  };
-
-  const onMove = useCallback((e: any) => {
-    if (!dragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    setPan({ x: clientX - dragOrigin.current.x, y: clientY - dragOrigin.current.y });
-  }, [dragging]);
-
-  const onStart = useCallback((e: any) => {
-    setDragging(true);
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    dragOrigin.current.x = clientX - pan.x;
-    dragOrigin.current.y = clientY - pan.y;
-  }, [pan]);
-
-  const onEnd = useCallback(() => setDragging(false), []);
-
-  useEffect(() => {
-    if (dragging) {
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onEnd);
-      window.addEventListener('touchmove', onMove, { passive: false });
-      window.addEventListener('touchend', onEnd);
-    }
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onEnd);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onEnd);
-    };
-  }, [dragging, onMove, onEnd]);
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      if (!window.location.hash.includes('preview')) {
-        setPreviewSrc(null);
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-      }
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  const handleDownload = () => {
-    if (!previewSrc) return;
-    const a = document.createElement('a');
-    a.href = previewSrc;
-    a.download = `photo_${Date.now()}.jpg`;
-    a.click();
-  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -220,22 +82,18 @@ export default function CenterPanel() {
         enteredByUserId: user.uid,
         submissionDateTime: new Date().toISOString(),
       };
-      const photoData = {
-        marksheetPhotoBase64: photos.marksheet || '',
-        aadhaarPhotoBase64: photos.aadhar || '',
-      };
-      saveStudentWithPhotosNonBlocking(firestore, studentData, photoData).catch(err => {
+      
+      addDocumentNonBlocking(collection(firestore, 'students'), studentData).catch(err => {
         toast({ variant: 'destructive', title: 'ભૂલ', description: 'સેવ ભૂલ: ' + err.message });
       });
       reset();
-      setPhotos({ marksheet: null, aadhar: null });
       toast({ title: 'સફળ!', description: 'માહિતી સફળતાપૂર્વક સેવ થઈ ગઈ છે.' });
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'ભૂલ', description: err.message || 'નેટવર્ક સમસ્યા.' });
     } finally {
       setIsSubmitting(false);
     }
-  }, [user, photos, firestore, percentage, reset, toast, isSubmitting]);
+  }, [user, firestore, percentage, reset, toast, isSubmitting]);
 
   if (!isApproved) {
     return (
@@ -339,77 +197,7 @@ export default function CenterPanel() {
                 </FormItem>
               </div>
 
-              {/* Photo Upload Section */}
-              <div className="space-y-6 pt-4 border-t-2 border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Camera className="h-6 w-6 text-primary" />
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase">દસ્તાવેજ ફોટા અપલોડ કરો (ઓપ્શનલ)</h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Marksheet Card */}
-                  <div className="p-5 rounded-3xl border-2 border-slate-200 bg-slate-50/50 space-y-4 hover:border-primary/40 transition-all">
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-sm uppercase text-slate-700">૧. રિઝલ્ટ / માર્કશીટ</span>
-                      {photos.marksheet && <Badge className="bg-emerald-500 font-bold">અપલોડ થયો</Badge>}
-                    </div>
-
-                    <input id={`${uid}-marksheet-gal`} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e, 'marksheet')} />
-
-                    {photos.marksheet ? (
-                      <div className="relative group rounded-2xl overflow-hidden border-2 border-primary/20 aspect-video bg-black">
-                        <img src={photos.marksheet} alt="Marksheet" className="w-full h-full object-contain" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                          <Button type="button" size="icon" variant="secondary" onClick={() => openPreview(photos.marksheet!)} className="h-10 w-10 rounded-full"><Eye className="h-5 w-5" /></Button>
-                          <Button type="button" size="icon" variant="destructive" onClick={() => setPhotos(p => ({ ...p, marksheet: null }))} className="h-10 w-10 rounded-full"><Trash2 className="h-5 w-5" /></Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        <Button type="button" variant="outline" onClick={() => triggerCamera('marksheet')} disabled={compressing.marksheet} className="h-14 rounded-2xl border-2 font-black gap-2 hover:bg-primary/5 hover:border-primary hover:text-primary">
-                          {compressing.marksheet ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-5 w-5 text-primary" />}
-                          કૅમેરાથી પાડો
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={() => triggerGallery('marksheet')} disabled={compressing.marksheet} className="h-14 rounded-2xl font-black gap-2">
-                          <Image className="h-5 w-5 text-slate-600" /> ગૅલેરીમાંથી પસંદ કરો
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Aadhaar Card */}
-                  <div className="p-5 rounded-3xl border-2 border-slate-200 bg-slate-50/50 space-y-4 hover:border-primary/40 transition-all">
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-sm uppercase text-slate-700">૨. આધારકાર્ડ</span>
-                      {photos.aadhar && <Badge className="bg-emerald-500 font-bold">અપલોડ થયો</Badge>}
-                    </div>
-
-                    <input id={`${uid}-aadhar-gal`} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e, 'aadhar')} />
-
-                    {photos.aadhar ? (
-                      <div className="relative group rounded-2xl overflow-hidden border-2 border-primary/20 aspect-video bg-black">
-                        <img src={photos.aadhar} alt="Aadhaar" className="w-full h-full object-contain" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                          <Button type="button" size="icon" variant="secondary" onClick={() => openPreview(photos.aadhar!)} className="h-10 w-10 rounded-full"><Eye className="h-5 w-5" /></Button>
-                          <Button type="button" size="icon" variant="destructive" onClick={() => setPhotos(p => ({ ...p, aadhar: null }))} className="h-10 w-10 rounded-full"><Trash2 className="h-5 w-5" /></Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        <Button type="button" variant="outline" onClick={() => triggerCamera('aadhar')} disabled={compressing.aadhar} className="h-14 rounded-2xl border-2 font-black gap-2 hover:bg-primary/5 hover:border-primary hover:text-primary">
-                          {compressing.aadhar ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-5 w-5 text-primary" />}
-                          કૅમેરાથી પાડો
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={() => triggerGallery('aadhar')} disabled={compressing.aadhar} className="h-14 rounded-2xl font-black gap-2">
-                          <Image className="h-5 w-5 text-slate-600" /> ગૅલેરીમાંથી પસંદ કરો
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Button type="submit" disabled={isSubmitting} className="w-full h-16 rounded-2xl font-black text-xl shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.01] active:scale-[0.99] transition-all gap-3">
+              <Button type="submit" disabled={isSubmitting} className="w-full h-16 rounded-2xl font-black text-xl shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.01] active:scale-[0.99] transition-all gap-3 mt-8">
                 {isSubmitting ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
                 માહિતી સેવ કરો
               </Button>
@@ -417,45 +205,6 @@ export default function CenterPanel() {
           </Form>
         </CardContent>
       </Card>
-
-      {/* Fullscreen Photo Preview Modal */}
-      <AnimatePresence>
-        {previewSrc && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4">
-            <div className="absolute top-6 right-6 flex gap-3 z-10">
-              <Button size="icon" variant="secondary" onClick={handleDownload} className="h-12 w-12 rounded-full"><Download className="h-6 w-6" /></Button>
-              <Button size="icon" variant="secondary" onClick={() => setZoom(z => Math.min(z + 0.5, 4))} className="h-12 w-12 rounded-full"><ZoomIn className="h-6 w-6" /></Button>
-              <Button size="icon" variant="secondary" onClick={() => setZoom(z => Math.max(z - 0.5, 1))} className="h-12 w-12 rounded-full"><ZoomOut className="h-6 w-6" /></Button>
-              <Button size="icon" variant="destructive" onClick={closePreview} className="h-12 w-12 rounded-full"><X className="h-6 w-6" /></Button>
-            </div>
-            <div className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing" onMouseDown={onStart} onTouchStart={onStart}>
-              <motion.img src={previewSrc} alt="Preview" style={{ scale: zoom, x: pan.x, y: pan.y }} className="max-w-full max-h-full object-contain pointer-events-none select-none transition-transform duration-75" />
-            </div>
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/50 text-xs font-black uppercase tracking-widest select-none bg-white/5 px-6 py-2 rounded-full border border-white/5">બંધ કરવા બહાર ટૅપ કરો</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* In-App Camera Modal */}
-      <CameraModal
-        open={cameraTarget !== null}
-        onClose={() => setCameraTarget(null)}
-        onCapture={async (dataUrl) => {
-          const target = cameraTarget;
-          setCameraTarget(null);
-          if (target) {
-            setCompressing(p => ({ ...p, [target]: true }));
-            try {
-              const compressed = await compressDataUrl(dataUrl, { quality: 0.5, maxWidth: 800 });
-              setPhotos(p => ({ ...p, [target]: compressed }));
-            } catch (e) {
-              setPhotos(p => ({ ...p, [target]: dataUrl }));
-            } finally {
-              setCompressing(p => ({ ...p, [target]: false }));
-            }
-          }
-        }}
-      />
     </motion.div>
   );
 }

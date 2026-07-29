@@ -58,19 +58,11 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 }
 
 /**
- * Saves student document and separated photos document atomically in a single batch.
+ * Saves student document atomically.
  */
-export function saveStudentWithPhotosNonBlocking(db: Firestore, studentData: any, photoData: any) {
+export function saveStudentNonBlocking(db: Firestore, studentData: any) {
   const studentRef = doc(collection(db, 'students'));
-  const photosRef = doc(db, 'student_photos', studentRef.id);
-  
-  const batch = writeBatch(db);
-  batch.set(studentRef, studentData);
-  if (photoData && (photoData.marksheetPhotoBase64 || photoData.aadhaarPhotoBase64)) {
-    batch.set(photosRef, photoData);
-  }
-  
-  const promise = runWithRetry(() => batch.commit())
+  const promise = runWithRetry(() => setDoc(studentRef, studentData))
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -86,19 +78,11 @@ export function saveStudentWithPhotosNonBlocking(db: Firestore, studentData: any
 }
 
 /**
- * Updates student document and separated photos document atomically in a single batch.
+ * Updates student document atomically.
  */
-export function updateStudentWithPhotosNonBlocking(db: Firestore, studentId: string, studentData: any, photoData: any) {
+export function updateStudentNonBlocking(db: Firestore, studentId: string, studentData: any) {
   const studentRef = doc(db, 'students', studentId);
-  const photosRef = doc(db, 'student_photos', studentId);
-  
-  const batch = writeBatch(db);
-  batch.update(studentRef, studentData);
-  if (photoData && (photoData.marksheetPhotoBase64 || photoData.aadhaarPhotoBase64)) {
-    batch.set(photosRef, photoData, { merge: true });
-  }
-  
-  const promise = runWithRetry(() => batch.commit())
+  const promise = runWithRetry(() => updateDoc(studentRef, studentData))
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -180,26 +164,6 @@ export async function moveDocumentToTrash(db: Firestore, sourceCollection: strin
     batch.delete(sourceRef);
 
     await runWithRetry(() => batch.commit());
-    
-    // Move base64 photos document in background
-    try {
-      const photosRef = doc(db, 'student_photos', docId);
-      const trashPhotosRef = doc(db, 'trash_student_photos', docId);
-      const photosSnap = await getDoc(photosRef);
-      if (photosSnap.exists()) {
-        const subBatch = writeBatch(db);
-        subBatch.set(trashPhotosRef, photosSnap.data());
-        subBatch.delete(photosRef);
-        await runWithRetry(() => subBatch.commit());
-      } else if (marksheetPhotoBase64 || aadhaarPhotoBase64) {
-        await runWithRetry(() => setDoc(trashPhotosRef, {
-          marksheetPhotoBase64: marksheetPhotoBase64 || "",
-          aadhaarPhotoBase64: aadhaarPhotoBase64 || ""
-        }));
-      }
-    } catch (photoError) {
-      console.warn("Photos trash transfer skipped due to rules or network:", photoError);
-    }
 
     return true;
   } catch (error: any) {
@@ -228,21 +192,6 @@ export async function restoreDocumentFromTrash(db: Firestore, sourceCollection: 
     batch.delete(trashRef);
 
     await runWithRetry(() => batch.commit());
-    
-    // Restore base64 photos document in background
-    try {
-      const trashPhotosRef = doc(db, 'trash_student_photos', docId);
-      const photosRef = doc(db, 'student_photos', docId);
-      const photosSnap = await getDoc(trashPhotosRef);
-      if (photosSnap.exists()) {
-        const subBatch = writeBatch(db);
-        subBatch.set(photosRef, photosSnap.data());
-        subBatch.delete(trashPhotosRef);
-        await runWithRetry(() => subBatch.commit());
-      }
-    } catch (photoError) {
-      console.warn("Photos restoration skipped due to rules or network:", photoError);
-    }
 
     return true;
   } catch (error: any) {
