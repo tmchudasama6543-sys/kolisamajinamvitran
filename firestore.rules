@@ -28,8 +28,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isAdmin(); // માત્ર એડમિન જ એક્સેસ મંજૂર કરી શકે
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow update: if isAdmin(); // admin can update any user
       allow delete: if isAdmin();
     }
 
