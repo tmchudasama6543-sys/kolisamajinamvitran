@@ -193,17 +193,26 @@ export default function StudentsListPage() {
         if (!base64Data) return;
         const fKey = field === 'marksheet' ? 'marksheetPhotoBase64' : 'aadhaarPhotoBase64';
         const processedData = ensureBase64Prefix(base64Data);
-        setPhotoLoading(prev => ({ ...prev, [fKey]: false }));
+        setPhotoLoading(prev => ({ ...prev, [fKey]: true }));
         
-        // Check editingStudent state directly (not just hash) for reliability
-        setEditingStudent(prev => {
-          if (prev) {
-            return { ...prev, [fKey]: processedData };
-          }
-          // No editing student open — set to newStudent
-          setNewStudent(p => ({ ...p, [fKey]: processedData }));
-          return prev;
-        });
+        compressDataUrl(processedData, { quality: 0.4, maxWidth: 800 })
+          .then(compressed => {
+            setEditingStudent(prev => {
+              if (prev) return { ...prev, [fKey]: compressed };
+              setNewStudent(p => ({ ...p, [fKey]: compressed }));
+              return prev;
+            });
+          })
+          .catch(() => {
+            setEditingStudent(prev => {
+              if (prev) return { ...prev, [fKey]: processedData };
+              setNewStudent(p => ({ ...p, [fKey]: processedData }));
+              return prev;
+            });
+          })
+          .finally(() => {
+            setPhotoLoading(prev => ({ ...prev, [fKey]: false }));
+          });
       };
       (window as any).handleNativeEditImage = callback;
       (window as any).handleNativeImage = callback;
