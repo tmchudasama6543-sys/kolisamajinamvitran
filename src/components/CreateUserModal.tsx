@@ -83,7 +83,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
           </button>
         </div>
         
-        <div className="p-6 space-y-5">
+        <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="p-6 space-y-5">
           <div className="space-y-2">
             <Label className="font-bold text-xs uppercase tracking-wider text-slate-500">નવું ઈમેલ</Label>
             <Input 
@@ -116,7 +116,7 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
                 <SelectItem value="data_entry">
                   <div className="flex items-center gap-2 font-bold"><UserCircle className="h-4 w-4 text-[#059669]" /> ડેટા એન્ટ્રી ઓપરેટર</div>
                 </SelectItem>
-                {adminEmail === 'jayhind6543@gmail.com' && (
+                {adminEmail.toLowerCase() === 'jayhind6543@gmail.com' && (
                   <SelectItem value="admin">
                     <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4 text-[#4F46E5]" /> એડમિન (Admin)</div>
                   </SelectItem>
@@ -126,13 +126,13 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
           </div>
           
           <Button 
-            onClick={handleCreate} 
+            type="submit"
             disabled={loading} 
             className="w-full h-14 mt-4 rounded-xl font-black text-lg shadow-lg hover:scale-[1.02] transition-all"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'એકાઉન્ટ બનાવો'}
           </Button>
-        </div>
+        </form>
       </div>
     </div>
   );
