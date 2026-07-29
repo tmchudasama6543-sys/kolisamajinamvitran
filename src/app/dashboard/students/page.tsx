@@ -98,7 +98,6 @@ export default function StudentsListPage() {
   const [showBulkTrashConfirm, setShowBulkTrashConfirm] = useState(false);
 
   const uid = useId();
-  const [cameraTarget, setCameraTarget] = useState<{ field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64'; context: 'new' | 'edit' } | null>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -219,21 +218,12 @@ export default function StudentsListPage() {
 
   const triggerEditCamera = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
     const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    // Kodular/Android WebViewer ma native camera use karo
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`camera_${fKey}`); } catch (_) {}
-      return; // Native camera handle karse
-    }
-    // Regular browser ma in-app CameraModal kholo
-    const context = window.location.hash.includes('edit') ? 'edit' : 'new';
-    setCameraTarget({ field, context });
+    const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
+    document.getElementById(`${uid}-${prefix}-${fKey}-cam`)?.click();
   };
 
   const triggerEditGallery = (field: 'marksheetPhotoBase64' | 'aadhaarPhotoBase64') => {
     const fKey = field === 'marksheetPhotoBase64' ? 'marksheet' : 'aadhar';
-    if (typeof window !== 'undefined' && (window as any).AppInventor) {
-      try { (window as any).AppInventor.setWebViewString(`gallery_${fKey}`); } catch (_) {}
-    }
     const prefix = window.location.hash.includes('edit') ? 'edit' : 'new';
     document.getElementById(`${uid}-${prefix}-${fKey}-gal`)?.click();
   };
@@ -562,36 +552,6 @@ export default function StudentsListPage() {
   if (userLoading) return <div className="p-10"><Skeleton className="h-[70vh] w-full rounded-3xl" /></div>;
   if (!user || user.role !== 'admin') return null;
 
-  const cameraModalComponent = (
-    <CameraModal
-      open={cameraTarget !== null}
-      onClose={() => setCameraTarget(null)}
-      onCapture={(dataUrl) => {
-        if (!cameraTarget) return;
-        const { field, context } = cameraTarget;
-        
-        compressDataUrl(dataUrl, { quality: 0.4, maxWidth: 800 })
-          .then(compressed => {
-            if (context === 'edit') {
-              setEditingStudent(prev => prev ? { ...prev, [field]: compressed } : null);
-            } else {
-              setNewStudent(prev => ({ ...prev, [field]: compressed }));
-            }
-          })
-          .catch(() => {
-             if (context === 'edit') {
-               setEditingStudent(prev => prev ? { ...prev, [field]: dataUrl } : null);
-             } else {
-               setNewStudent(prev => ({ ...prev, [field]: dataUrl }));
-             }
-          })
-          .finally(() => {
-             setCameraTarget(null);
-          });
-      }}
-    />
-  );
-
   if (isAddingNew) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-10 max-w-4xl mx-auto space-y-8 pb-64">
@@ -642,6 +602,7 @@ export default function StudentsListPage() {
                        </div>
                      )}
                      <input id={`${uid}-new-${fKey}-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleImageReplace(ev, f)} />
+                     <input id={`${uid}-new-${fKey}-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleImageReplace(ev, f)} />
                   </div>
                </div>
                );
@@ -685,7 +646,6 @@ export default function StudentsListPage() {
             </div>
           </div>
         </div>
-        {cameraModalComponent}
       </motion.div>
     );
   }
@@ -740,6 +700,7 @@ export default function StudentsListPage() {
                        </div>
                      )}
                      <input id={`${uid}-edit-${fKey}-gal`} type="file" className="hidden" accept="image/*" onChange={ev => handleImageReplace(ev, f)} />
+                     <input id={`${uid}-edit-${fKey}-cam`} type="file" className="hidden" accept="image/*" capture="environment" onChange={ev => handleImageReplace(ev, f)} />
                   </div>
                </div>
                );
@@ -806,7 +767,6 @@ export default function StudentsListPage() {
             </motion.div>
           </AnimatePresence>
         )}
-        {cameraModalComponent}
       </motion.div>
     );
   }
@@ -1012,7 +972,7 @@ export default function StudentsListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {cameraModalComponent}
+
     </div>
   );
 }
