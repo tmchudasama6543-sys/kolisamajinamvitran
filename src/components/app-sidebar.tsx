@@ -121,19 +121,21 @@ export function AppSidebar({ user }: { user: AppUser }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/dashboard/users')}
-                    tooltip="વપરાશકર્તાઓ"
-                    className={cn("h-12 rounded-xl font-bold transition-all", pathname.startsWith('/dashboard/users') && "bg-[#F0FDFA] text-[#0D9488]")}
-                  >
-                    <Link href="/dashboard/users" replace={true} prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
-                      <UserCog className="h-5 w-5" />
-                      <span>વપરાશકર્તાઓ</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {user?.email?.toLowerCase() === 'jayhind6543@gmail.com' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith('/dashboard/users')}
+                      tooltip="વપરાશકર્તાઓ"
+                      className={cn("h-12 rounded-xl font-bold transition-all", pathname.startsWith('/dashboard/users') && "bg-[#F0FDFA] text-[#0D9488]")}
+                    >
+                      <Link href="/dashboard/users" replace={true} prefetch={true} onClick={() => isMobile && setOpenMobile(false)}>
+                        <UserCog className="h-5 w-5" />
+                        <span>વપરાશકર્તાઓ</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild

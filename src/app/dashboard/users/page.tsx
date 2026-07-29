@@ -27,8 +27,11 @@ export default function UsersPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!adminLoading && adminUser?.role !== 'admin') {
-      router.replace('/dashboard');
+    if (!adminLoading) {
+      const isMasterAdmin = adminUser?.email?.toLowerCase() === 'jayhind6543@gmail.com';
+      if (!isMasterAdmin) {
+        router.replace('/dashboard');
+      }
     }
   }, [adminUser, adminLoading, router]);
 
