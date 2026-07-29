@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, ShieldCheck, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 import { useFirestore } from '@/firebase';
 
@@ -28,6 +28,25 @@ export default function CreateUserModal({ onClose, adminEmail }: { onClose: () =
     
     setLoading(true);
     const cleanEmail = email.trim().toLowerCase();
+
+    // 0. Pre-check if email already exists in Firestore
+    try {
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where('email', '==', cleanEmail));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        const existingData = querySnap.docs[0].data();
+        if (existingData.role === 'admin') {
+          setInlineError('આ ઈમેલથી પહેલેથી જ એડમિન એકાઉન્ટ બનેલું છે!');
+        } else {
+          setInlineError('આ ઈમેલથી પહેલેથી જ ડેટા એન્ટ્રી ઓપરેટર એકાઉન્ટ બનેલું છે! એક જ ઈમેલ પર બે અલગ રોલ ન બની શકે.');
+        }
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      // If query fails, proceed to API call
+    }
     
     try {
       const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`, {
