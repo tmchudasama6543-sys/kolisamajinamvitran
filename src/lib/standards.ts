@@ -36,7 +36,7 @@ export const academicStandards = [
   'diplo it sem-1', 'diplo it sem-2', 'diplo it sem-3', 'diplo it sem-4', 'diplo it sem-5', 'diplo it sem-6',
   'diplo eng sem-1', 'diplo eng sem-2', 'diplo eng sem-3', 'diplo eng sem-4', 'diplo eng sem-5', 'diplo eng sem-6',
   'diplo chemi eng', 'diplo naturotherapy', 'diplo painting', 'diplo pg', 'diplo ફાર્મસી',
-  'ITI mechanic', 'ITI mechanic (diesel)', 'ITI copa', 'ITI com ope', 'ITI ઇલેક્ટ્રિકલ', 'ITI ફિટર',
+  'ITI mechanic', 'ITI mechanic (diesel)', 'ITI copa', 'ITI com ope', 'ITI ઇલેક્ટ્રિકલ', 'ITI ફિટર', 'ITI વાયરમેન',
   'si sem-1', 'si sem-2',
   'gujcet', 'neet', 'JEE', 'UGC-NET',
   'Phd', 'B.Tech', 'ડિપ્લો ફાયરમેન', 'B.P.Ed', 'G.D.C.A', 'L.L.M', 'diplo Agriculture', 'diplo computer engineering'
