@@ -39,5 +39,5 @@ export const academicStandards = [
   'ITI mechanic', 'ITI mechanic (diesel)', 'ITI copa', 'ITI com ope', 'ITI ઇલેક્ટ્રિકલ', 'ITI ફિટર',
   'si sem-1', 'si sem-2',
   'gujcet', 'neet', 'JEE', 'UGC-NET',
-  'Phd', 'B.Tech', 'ડિપ્લો ફાયરમેન', 'B.P.Ed', 'G.D.C.A', 'L.L.M', 'diplo Agriculture'
+  'Phd', 'B.Tech', 'ડિપ્લો ફાયરમેન', 'B.P.Ed', 'G.D.C.A', 'L.L.M', 'diplo Agriculture', 'diplo computer engineering'
 ];
